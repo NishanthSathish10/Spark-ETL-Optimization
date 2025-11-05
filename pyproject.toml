@@ -1,0 +1,19 @@
+[project]
+name = "spark-etl-optimization"
+version = "0.1.0"
+description = "A project to demonstrate Spark ETL optimization on NYC Taxi data."
+readme = "README.md"
+requires-python = ">=3.8"
+
+# Project dependencies are listed here
+dependencies = [
+    "pyspark",
+    "requests",
+    "tqdm",
+    "pandas",
+]
+
+[tool.uv.workspace]
+members = [
+    "spark-etl-optimization",
+]

@@ -1,0 +1,42 @@
+Reading taxi zone lookup data...
+Finding all yellow taxi data files (2011-2024)...
+Found 168 files. Reading and standardizing one by one...
+  ...processing file 1 of 168: data/raw/yellow_tripdata_2011-01.parquet
+  ...processing file 21 of 168: data/raw/yellow_tripdata_2012-09.parquet
+  ...processing file 41 of 168: data/raw/yellow_tripdata_2014-05.parquet
+  ...processing file 61 of 168: data/raw/yellow_tripdata_2016-01.parquet
+  ...processing file 81 of 168: data/raw/yellow_tripdata_2017-09.parquet
+  ...processing file 101 of 168: data/raw/yellow_tripdata_2019-05.parquet
+  ...processing file 121 of 168: data/raw/yellow_tripdata_2021-01.parquet
+  ...processing file 141 of 168: data/raw/yellow_tripdata_2022-09.parquet
+  ...processing file 161 of 168: data/raw/yellow_tripdata_2024-05.parquet
+...all files processed. Unioning into one large DataFrame...
+--- Unified Schema (Selected Columns) ---
+root
+ |-- std_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- std_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- std_PULocationID: long (nullable = true)
+ |-- std_DOLocationID: long (nullable = true)
+ |-- std_trip_distance: double (nullable = true)
+ |-- std_total_amount: double (nullable = true)
+ |-- std_passenger_count: integer (nullable = true)
+
+Applying transformations with Shuffle Joins...
+Cleaning data and engineering features...
+Running baseline analytics...
+--- Analytics Results (Intermediate) ---
++--------------+------------------+------------------+-----------------+-----------+
+|pickup_borough|avg_trip_distance |avg_total_amount  |max_trip_duration|total_trips|
++--------------+------------------+------------------+-----------------+-----------+
+|Brooklyn      |7.155092579181579 |16.802116687945787|239.98           |25379896   |
+|EWR           |7.151510826372557 |64.48786797502233 |222.33           |12331      |
+|N/A           |9.058351328723354 |19.148878886168063|239.47           |1612450    |
+|Staten Island |7.846687636335304 |30.85243358522902 |235.57           |51344      |
+|Manhattan     |5.202921477303701 |14.31740808258185 |239.98           |1269720903 |
+|Unknown       |5.650359281221851 |15.218083144272502|239.2            |21420574   |
+|Queens        |16.67811816154495 |44.081516754238585|239.97           |79902459   |
+|Bronx         |5.3025674769294815|19.890715051151965|239.92           |1297110    |
++--------------+------------------+------------------+-----------------+-----------+
+
+Writing cleaned data to 'data/cleaned_trips_intermediate'...
+--- Intermediate Job Complete ---

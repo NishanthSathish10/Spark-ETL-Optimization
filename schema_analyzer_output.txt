@@ -1,0 +1,756 @@
+Starting schema analysis...
+This will read the metadata (footer) of each file.
+Found 192 total files to analyze.
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2009-01.parquet
+================================================================================
+root
+ |-- vendor_name: string (nullable = true)
+ |-- Trip_Pickup_DateTime: string (nullable = true)
+ |-- Trip_Dropoff_DateTime: string (nullable = true)
+ |-- Passenger_Count: long (nullable = true)
+ |-- Trip_Distance: double (nullable = true)
+ |-- Start_Lon: double (nullable = true)
+ |-- Start_Lat: double (nullable = true)
+ |-- Rate_Code: double (nullable = true)
+ |-- store_and_forward: double (nullable = true)
+ |-- End_Lon: double (nullable = true)
+ |-- End_Lat: double (nullable = true)
+ |-- Payment_Type: string (nullable = true)
+ |-- Fare_Amt: double (nullable = true)
+ |-- surcharge: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- Tip_Amt: double (nullable = true)
+ |-- Tolls_Amt: double (nullable = true)
+ |-- Total_Amt: double (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2009-12.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2010-01.parquet
+================================================================================
+root
+ |-- vendor_id: string (nullable = true)
+ |-- pickup_datetime: string (nullable = true)
+ |-- dropoff_datetime: string (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- pickup_longitude: double (nullable = true)
+ |-- pickup_latitude: double (nullable = true)
+ |-- rate_code: string (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- dropoff_longitude: double (nullable = true)
+ |-- dropoff_latitude: double (nullable = true)
+ |-- payment_type: string (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- surcharge: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2010-01.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2010-02.parquet
+================================================================================
+root
+ |-- vendor_id: string (nullable = true)
+ |-- pickup_datetime: string (nullable = true)
+ |-- dropoff_datetime: string (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- pickup_longitude: double (nullable = true)
+ |-- pickup_latitude: double (nullable = true)
+ |-- rate_code: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- dropoff_longitude: double (nullable = true)
+ |-- dropoff_latitude: double (nullable = true)
+ |-- payment_type: string (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- surcharge: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- __index_level_0__: long (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2010-03.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2010-04.parquet
+================================================================================
+root
+ |-- vendor_id: string (nullable = true)
+ |-- pickup_datetime: string (nullable = true)
+ |-- dropoff_datetime: string (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- pickup_longitude: double (nullable = true)
+ |-- pickup_latitude: double (nullable = true)
+ |-- rate_code: string (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- dropoff_longitude: double (nullable = true)
+ |-- dropoff_latitude: double (nullable = true)
+ |-- payment_type: string (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- surcharge: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2010-12.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2011-01.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: double (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2011-01.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2011-02.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2011-02.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2011-03.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2011-03.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2011-04.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2012-11.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2012-12.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2012-12.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2013-01.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2013-04.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2013-05.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2013-05.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2013-06.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2013-12.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2014-01.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2014-01.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2014-02.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2014-07.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2014-08.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: integer (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2014-08.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2014-09.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2017-12.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2018-01.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: double (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2018-01.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2018-02.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2018-05.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2018-06.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2018-06.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2018-07.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2018-08.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2018-09.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2018-09.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2018-10.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2018-10.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2018-11.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2018-11.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2018-12.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: integer (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2018-12.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2019-01.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2020-07.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2020-08.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: double (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2020-09.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2020-10.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: integer (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2020-10.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2020-11.parquet
+================================================================================
+root
+ |-- VendorID: long (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: double (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: double (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: long (nullable = true)
+ |-- DOLocationID: long (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- airport_fee: double (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2023-01.parquet
+
+================================================================================
+NEW SCHEMA FOUND in file: data/raw/yellow_tripdata_2023-02.parquet
+================================================================================
+root
+ |-- VendorID: integer (nullable = true)
+ |-- tpep_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- tpep_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- passenger_count: long (nullable = true)
+ |-- trip_distance: double (nullable = true)
+ |-- RatecodeID: long (nullable = true)
+ |-- store_and_fwd_flag: string (nullable = true)
+ |-- PULocationID: integer (nullable = true)
+ |-- DOLocationID: integer (nullable = true)
+ |-- payment_type: long (nullable = true)
+ |-- fare_amount: double (nullable = true)
+ |-- extra: double (nullable = true)
+ |-- mta_tax: double (nullable = true)
+ |-- tip_amount: double (nullable = true)
+ |-- tolls_amount: double (nullable = true)
+ |-- improvement_surcharge: double (nullable = true)
+ |-- total_amount: double (nullable = true)
+ |-- congestion_surcharge: double (nullable = true)
+ |-- Airport_fee: double (nullable = true)
+
+    ...schema consistent up to: data/raw/yellow_tripdata_2024-12.parquet
+
+Schema analysis complete.
