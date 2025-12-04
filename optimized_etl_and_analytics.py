@@ -1,3 +1,4 @@
+import time
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit, round, avg, count, max, to_timestamp, coalesce, broadcast
@@ -11,13 +12,10 @@ def create_optimized_spark_session():
         .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
         .config("spark.sql.caseSensitive", "true") \
         .config("spark.sql.parquet.enableVectorizedReader", "false") \
-        .config("spark.memory.fraction", "0.7") \
         .getOrCreate()
-    # Optimization: Lower memory fraction slightly to leave room for execution
     return spark
 
 # --- SCHEMAS ---
-
 # Schema 1: Legacy (2011 - June 2018)
 SCHEMA_LEGACY = StructType([
     StructField("tpep_pickup_datetime", TimestampNTZType(), True),
@@ -58,7 +56,7 @@ SCHEMA_MODERN = StructType([
 ])
 
 def run_optimized_etl(spark):
-    print("--- Starting Optimized ETL Job (Streaming Strategy / No Cache) ---")
+    print("--- Starting Optimized ETL Job (Final Clean Strategy) ---")
 
     print("Reading lookup table...")
     taxi_zone_lookup_df = spark.read \
@@ -67,16 +65,13 @@ def run_optimized_etl(spark):
         .csv("data/taxi_zone_lookup.csv") \
         .alias("zones") 
 
-    # --- DEFINE FILE LISTS ---
-    
-    # 1. Legacy: 2011 - June 2018
+    # --- FILE LISTS ---
     files_1 = []
     for year in range(2011, 2018):
         files_1.append(f"data/raw/yellow_tripdata_{year}*.parquet")
     for i in range(1, 7):
         files_1.append(f"data/raw/yellow_tripdata_2018-0{i}.parquet")
 
-    # 2. Middle: July 2018 - Jan 2023
     files_2 = []
     for i in range(7, 13):
         files_2.append(f"data/raw/yellow_tripdata_2018-{i:02d}.parquet")
@@ -84,24 +79,22 @@ def run_optimized_etl(spark):
         files_2.append(f"data/raw/yellow_tripdata_{year}*.parquet")
     files_2.append("data/raw/yellow_tripdata_2023-01.parquet")
 
-    # 3. Modern: Feb 2023 - 2024
     files_3 = []
     for i in range(2, 13):
         files_3.append(f"data/raw/yellow_tripdata_2023-{i:02d}.parquet")
     files_3.append("data/raw/yellow_tripdata_2024*.parquet")
 
-    # --- READ AND STANDARDIZE ---
-
-    print("Reading Batch 1: Legacy (Longs)...")
+    # --- READ ---
+    print("Reading Batch 1 (Legacy)...")
     df_1 = spark.read.schema(SCHEMA_LEGACY).parquet(*files_1).select(
         coalesce(col("tpep_pickup_datetime"), to_timestamp(col("pickup_datetime"))).alias("pickup_datetime"),
         coalesce(col("tpep_dropoff_datetime"), to_timestamp(col("dropoff_datetime"))).alias("dropoff_datetime"),
         col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
         col("passenger_count").cast(IntegerType()),
-        lit(0.0).alias("airport_fee") 
+        lit(0.0).alias("airport_fee")
     )
 
-    print("Reading Batch 2: Middle (Doubles)...")
+    print("Reading Batch 2 (Middle)...")
     df_2 = spark.read.schema(SCHEMA_MIDDLE).parquet(*files_2).select(
         col("tpep_pickup_datetime").alias("pickup_datetime"),
         col("tpep_dropoff_datetime").alias("dropoff_datetime"),
@@ -110,7 +103,7 @@ def run_optimized_etl(spark):
         coalesce(col("airport_fee"), col("Airport_fee")).alias("airport_fee")
     )
 
-    print("Reading Batch 3: Modern (Longs)...")
+    print("Reading Batch 3 (Modern)...")
     df_3 = spark.read.schema(SCHEMA_MODERN).parquet(*files_3).select(
         col("tpep_pickup_datetime").alias("pickup_datetime"),
         col("tpep_dropoff_datetime").alias("dropoff_datetime"),
@@ -119,13 +112,20 @@ def run_optimized_etl(spark):
         coalesce(col("airport_fee"), col("Airport_fee")).alias("airport_fee")
     )
 
-    # --- UNION ---
     print("Unioning datasets...")
     raw_df = df_1.unionByName(df_2).unionByName(df_3)
 
-    # --- FEATURE ENGINEERING ---
-    print("Calculating trip duration...")
-    df_features = raw_df.withColumn(
+    # --- CLEANING & FEATURE ENG ---
+    print("Cleaning and calculating features...")
+    
+    # 1. Fill Numerical Nulls (Safe defaults)
+    # FIX: passenger_count -> 1 (Business Logic: assume at least 1 passenger)
+    # airport_fee -> 0.0 (Safe)
+    df_filled = raw_df.fillna(1, subset=["passenger_count"]) \
+                      .fillna(0.0, subset=["airport_fee"])
+
+    # 2. Calculate Duration
+    df_features = df_filled.withColumn(
         "trip_duration_mins",
         round(
             (col("dropoff_datetime").cast(TimestampType()).cast("double") - \
@@ -134,8 +134,8 @@ def run_optimized_etl(spark):
         )
     )
 
-    # --- FILTERING ---
-    print("Filtering invalid rows...")
+    # 3. Filter Invalid Rows
+    # Note: > 0 checks handle NULLs implicitly
     df_filtered = df_features.filter(
         (col("trip_distance") > 0) & 
         (col("total_amount") > 0) & 
@@ -145,11 +145,22 @@ def run_optimized_etl(spark):
         (col("DOLocationID").isNotNull())
     )
 
+    # Remove "Unknown" and "N/A" boroughs which are valid join keys but invalid for analysis
+    # print("Filtering 'Unknown' and 'N/A' boroughs...")
+    # df_filtered = df_filtered.filter(
+    #     (col("pickup_borough") != "Unknown") & 
+    #     (col("pickup_borough") != "N/A") &
+    #     (col("dropoff_borough") != "Unknown") & 
+    #     (col("dropoff_borough") != "N/A")
+    # )
+
     # --- JOIN ---
     print("Performing BROADCAST Joins...")
     pickup_zones = taxi_zone_lookup_df.alias("pickup_zones")
+    pickup_zones = pickup_zones.filter((col("pickup_zones.Borough") != "Unknown") & (col("pickup_zones.Borough") != "N/A"))
     dropoff_zones = taxi_zone_lookup_df.alias("dropoff_zones")
-    
+    dropoff_zones = dropoff_zones.filter((col("dropoff_zones.Borough") != "Unknown") & (col("dropoff_zones.Borough") != "N/A"))
+
     df_joined = df_filtered.join(
         broadcast(pickup_zones), 
         col("PULocationID") == col("pickup_zones.LocationID"),
@@ -163,26 +174,25 @@ def run_optimized_etl(spark):
         col("pickup_zones.Borough").alias("pickup_borough"),
         col("dropoff_zones.Borough").alias("dropoff_borough")
     )
+    
 
-    # --- REMOVED CACHING & COUNT ---
-    # We skip .cache() and .count() to avoid holding 1.4B rows in memory.
-    # This prevents the OOM error on your laptop.
+    # # --- ANALYTICS ---
+    # print("Running Analytics...")
+    
+    # print("--- Top Pickup Boroughs ---")
+    # df_joined.groupBy("pickup_borough").count().orderBy(col("count").desc()).show(truncate=False)
 
-    print("Running Analytics (Pass 1: Top Boroughs)...")
-    df_joined.groupBy("pickup_borough").count().orderBy(col("count").desc()).show(truncate=False)
-
-    print("Running Analytics (Pass 2: Avg Metrics)...")
-    df_joined.groupBy("pickup_borough").agg(
-        avg("trip_distance").alias("avg_dist"),
-        avg("total_amount").alias("avg_cost"),
-        avg("trip_duration_mins").alias("avg_time"),
-        avg("passenger_count").alias("avg_passengers"),
-        avg("airport_fee").alias("avg_airport_fee")
-    ).orderBy(col("avg_cost").desc()).show(truncate=False)
+    # print("--- Avg Metrics by Borough ---")
+    # df_joined.groupBy("pickup_borough").agg(
+    #     avg("trip_distance").alias("avg_dist"),
+    #     avg("total_amount").alias("avg_cost"),
+    #     avg("trip_duration_mins").alias("avg_time"),
+    #     avg("passenger_count").alias("avg_passengers"),
+    #     avg("airport_fee").alias("avg_airport_fee")
+    # ).orderBy(col("avg_cost").desc()).show(truncate=False)
 
     # --- WRITE ---
-    print("Writing final optimized dataset (Pass 3: Coalesced Write)...")
-    # This will re-read and re-process the data, but it's safe.
+    print("Writing final optimized dataset (coalesced)...")
     df_joined.coalesce(10).write \
         .mode("overwrite") \
         .parquet("data/cleaned_trips_optimized")
@@ -190,6 +200,9 @@ def run_optimized_etl(spark):
     print("Optimization Job Complete.")
 
 if __name__ == "__main__":
+    start_time = time.time()
     spark = create_optimized_spark_session()
     run_optimized_etl(spark)
     spark.stop()
+    end_time = time.time()
+    print(f"Total Execution Time: {end_time - start_time:.2f} seconds")
