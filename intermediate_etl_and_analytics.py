@@ -1,287 +1,190 @@
 import pyspark
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lit, round, avg, count, max, to_timestamp, coalesce
+from pyspark.sql.functions import col, lit, round, avg, count, max, to_timestamp, coalesce, broadcast
 from pyspark.sql.types import StructType, StructField, StringType, LongType, DoubleType, IntegerType, TimestampNTZType, TimestampType
-import glob # Import glob to find files
 
-def create_spark_session():
-    """
-    Creates a Spark Session based on our schema_analyzer.py findings.
-    
-    1. spark.sql.caseSensitive=true:
-       Required because we have both 'airport_fee' and 'Airport_fee'.
-       
-    2. spark.sql.shuffle.partitions=8:
-       Kept from the naive script to ensure our joins and
-       aggregations are inefficient and spill to disk.
-    
-    NOTE: We've removed reader configs and the MASTER_SCHEMA
-    as we are now reading files one-by-one.
-    """
+def create_optimized_spark_session():
     spark = SparkSession.builder \
-        .appName("Intermediate_ETL_and_Analytics") \
-        .config("spark.sql.shuffle.partitions", "8") \
+        .appName("Optimized_ETL_and_Analytics") \
+        .config("spark.sql.adaptive.enabled", "true") \
+        .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
         .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
         .config("spark.sql.caseSensitive", "true") \
+        # Constraint: Must use non-vectorized to handle Int->Double promotion safely
+        .config("spark.sql.parquet.enableVectorizedReader", "false") \
         .getOrCreate()
     return spark
 
-def standardize_schema(df, file_name):
-    """
-    Takes a DataFrame with *any* of the 2011-2024 schemas
-    and standardizes it to a single, common format.
-    
-    --- THIS IS THE KEY FIX ---
-    We dynamically check which columns exist in the current DataFrame
-    before trying to use them.
-    """
-    
-    df_cols = df.columns
-    
-    # --- 1. Standardize Pickup Datetime ---
-    if "tpep_pickup_datetime" in df_cols:
-        df = df.withColumn("std_pickup_datetime", col("tpep_pickup_datetime"))
-    elif "pickup_datetime" in df_cols: # For 2010 files (if they existed)
-        df = df.withColumn("std_pickup_datetime", to_timestamp(col("pickup_datetime")))
-    elif "Trip_Pickup_DateTime" in df_cols: # For 2009 files (if they existed)
-         df = df.withColumn("std_pickup_datetime", to_timestamp(col("Trip_Pickup_DateTime")))
-    else:
-        # Fallback if no known column is found
-        df = df.withColumn("std_pickup_datetime", lit(None).cast(TimestampType()))
+# --- SCHEMAS ---
+# We use DoubleType for fees/metrics because Int32->Double is safe in non-vectorized reader.
+# We MUST match passenger_count to the file's physical type (Long vs Double) to avoid crashes.
 
-    # --- 2. Standardize Dropoff Datetime ---
-    if "tpep_dropoff_datetime" in df_cols:
-        df = df.withColumn("std_dropoff_datetime", col("tpep_dropoff_datetime"))
-    elif "dropoff_datetime" in df_cols:
-        df = df.withColumn("std_dropoff_datetime", to_timestamp(col("dropoff_datetime")))
-    elif "Trip_Dropoff_DateTime" in df_cols:
-         df = df.withColumn("std_dropoff_datetime", to_timestamp(col("Trip_Dropoff_DateTime")))
-    else:
-        df = df.withColumn("std_dropoff_datetime", lit(None).cast(TimestampType()))
+# ERA 1: Long Passenger Count
+SCHEMA_LONG = StructType([
+    StructField("tpep_pickup_datetime", TimestampNTZType(), True),
+    StructField("tpep_dropoff_datetime", TimestampNTZType(), True),
+    StructField("trip_distance", DoubleType(), True),
+    StructField("total_amount", DoubleType(), True),
+    StructField("passenger_count", LongType(), True), # <--- MATCHES FILE
+    StructField("PULocationID", LongType(), True),
+    StructField("DOLocationID", LongType(), True),
+    StructField("airport_fee", DoubleType(), True),
+    StructField("pickup_datetime", StringType(), True),
+    StructField("dropoff_datetime", StringType(), True),
+])
 
-    # --- 3. Standardize PULocationID ---
-    if "PULocationID" in df_cols:
-        df = df.withColumn("std_PULocationID", col("PULocationID").cast(LongType()))
-    else:
-        # This will apply to 2010 files, creating a null column
-        df = df.withColumn("std_PULocationID", lit(None).cast(LongType()))
+# ERA 2: Double Passenger Count
+SCHEMA_DOUBLE = StructType([
+    StructField("tpep_pickup_datetime", TimestampNTZType(), True),
+    StructField("tpep_dropoff_datetime", TimestampNTZType(), True),
+    StructField("trip_distance", DoubleType(), True),
+    StructField("total_amount", DoubleType(), True),
+    StructField("passenger_count", DoubleType(), True), # <--- MATCHES FILE
+    StructField("PULocationID", LongType(), True),
+    StructField("DOLocationID", LongType(), True),
+    StructField("airport_fee", DoubleType(), True),
+    StructField("Airport_fee", DoubleType(), True)
+])
+
+def generate_file_list(start_year, start_month, end_year, end_month):
+    """
+    Generates a precise list of file paths month-by-month.
+    This avoids wildcard errors where 2018*.parquet grabs the wrong months.
+    """
+    files = []
+    # Handle start year
+    s_m = start_month
+    e_m = 12 if start_year < end_year else end_month
+    
+    for year in range(start_year, end_year + 1):
+        # Determine month range for this year
+        start_m = start_month if year == start_year else 1
+        end_m = end_month if year == end_year else 12
         
-    # --- 4. Standardize DOLocationID ---
-    if "DOLocationID" in df_cols:
-        df = df.withColumn("std_DOLocationID", col("DOLocationID").cast(LongType()))
-    else:
-        df = df.withColumn("std_DOLocationID", lit(None).cast(LongType()))
+        for month in range(start_m, end_m + 1):
+            files.append(f"data/raw/yellow_tripdata_{year}-{month:02d}.parquet")
+            
+    return files
 
-    # --- 5. Standardize Trip Distance ---
-    if "trip_distance" in df_cols and "Trip_Distance" in df_cols:
-        df = df.withColumn("std_trip_distance", coalesce(col("trip_distance"), col("Trip_Distance")).cast(DoubleType()))
-    elif "trip_distance" in df_cols:
-        df = df.withColumn("std_trip_distance", col("trip_distance").cast(DoubleType()))
-    elif "Trip_Distance" in df_cols:
-        df = df.withColumn("std_trip_distance", col("Trip_Distance").cast(DoubleType()))
-    else:
-        df = df.withColumn("std_trip_distance", lit(None).cast(DoubleType()))
-        
-    # --- 6. Standardize Total Amount ---
-    if "total_amount" in df_cols and "Total_Amt" in df_cols:
-        df = df.withColumn("std_total_amount", coalesce(col("total_amount"), col("Total_Amt")).cast(DoubleType()))
-    elif "total_amount" in df_cols:
-        df = df.withColumn("std_total_amount", col("total_amount").cast(DoubleType()))
-    elif "Total_Amt" in df_cols:
-        df = df.withColumn("std_total_amount", col("Total_Amt").cast(DoubleType()))
-    else:
-        df = df.withColumn("std_total_amount", lit(None).cast(DoubleType()))
+def run_optimized_etl(spark):
+    print("--- Starting Optimized ETL Job (Precise Month-Batch Strategy) ---")
 
-    # --- 7. Standardize Passenger Count ---
-    if "passenger_count" in df_cols and "Passenger_Count" in df_cols:
-         df = df.withColumn("std_passenger_count", coalesce(col("passenger_count"), col("Passenger_Count")).cast(IntegerType()))
-    elif "passenger_count" in df_cols:
-         df = df.withColumn("std_passenger_count", col("passenger_count").cast(IntegerType()))
-    elif "Passenger_Count" in df_cols:
-         df = df.withColumn("std_passenger_count", col("Passenger_Count").cast(IntegerType()))
-    else:
-         df = df.withColumn("std_passenger_count", lit(None).cast(IntegerType()))
-
-    
-    # --- 8. Select *only* the standardized columns ---
-    # This ensures every DataFrame has the *exact* same schema
-    # before we try to union them.
-    
-    final_cols = [
-        "std_pickup_datetime",
-        "std_dropoff_datetime",
-        "std_PULocationID",
-        "std_DOLocationID",
-        "std_trip_distance",
-        "std_total_amount",
-        "std_passenger_count"
-    ]
-    
-    return df.select(final_cols)
-
-
-def run_intermediate_etl_and_analytics(spark):
-    """
-    Runs the 'intermediate' ETL job.
-    This version successfully reads all data from 2011-2024
-    by reading *one file at a time* and unioning them.
-    This is a huge performance bottleneck.
-    """
-    
-    # --- 1. Intermediate Data Loading ---
-    
-    print("Reading taxi zone lookup data...")
+    print("Reading lookup table...")
     taxi_zone_lookup_df = spark.read \
         .option("header", "true") \
         .option("inferSchema", "true") \
-        .csv("data/taxi_zone_lookup.csv")
-    
-    # --- INTERMEDIATE FIX: Read files one-by-one ---
-    # We abandon the master schema and read each file,
-    # letting Spark infer its schema, then immediately
-    # standardizing it.
-    
-    print("Finding all yellow taxi data files (2011-2024)...")
-    file_paths = sorted(
-        glob.glob("data/raw/yellow_tripdata_201*.parquet") + \
-        glob.glob("data/raw/yellow_tripdata_202*.parquet")
-    )
-    
-    if not file_paths:
-        raise FileNotFoundError("No Parquet files found in 'data/raw/' for 2011-2024.")
+        .csv("data/taxi_zone_lookup.csv") \
+        .alias("zones") 
 
-    print(f"Found {len(file_paths)} files. Reading and standardizing one by one...")
+    # --- BATCH 1: The "Long" Era (2011-01 to 2018-06) ---
+    print("Reading Batch 1 (2011-01 to 2018-06)...")
+    files_1 = generate_file_list(2011, 1, 2018, 6)
     
-    all_dfs = [] # A list to hold all our standardized DataFrames
-    
-    for i, file_path in enumerate(file_paths):
-        if (i % 20) == 0:
-            print(f"  ...processing file {i+1} of {len(file_paths)}: {file_path}")
-        
-        try:
-            # 1. Read one file, inferring its schema
-            df = spark.read.parquet(file_path)
-            
-            # 2. Standardize it
-            df_std = standardize_schema(df, file_path)
-            
-            # 3. Add to our list
-            all_dfs.append(df_std)
-            
-        except Exception as e:
-            print(f"!! FAILED to process file {file_path}: {e}")
-            # We "naively" skip this file and continue
-            pass
-
-    print("...all files processed. Unioning into one large DataFrame...")
-    
-    # This is a "naive" way to union. A more optimal
-    # way is to use reduce, but this is fine for our
-    # intermediate script.
-    if not all_dfs:
-        raise Exception("No dataframes were successfully read and standardized.")
-        
-    df_unified = all_dfs[0]
-    for i in range(1, len(all_dfs)):
-        df_unified = df_unified.union(all_dfs[i])
-
-    # DEBUG: See the new unified schema
-    print("--- Unified Schema (Selected Columns) ---")
-    df_unified.printSchema()
-    
-    
-    # --- 3. "Naive" Transformations (Bottlenecks Kept) ---
-    
-    print("Applying transformations with Shuffle Joins...")
-    
-    # BAD PRACTICE 4 (Still Naive): Triggering a "SortMergeJoin".
-    # This 'inner' join will drop any 2011+ rows where PULocationID is null.
-    df_with_pu_location = df_unified.join(
-        taxi_zone_lookup_df,
-        col("std_PULocationID") == col("LocationID"),
-        "inner"
-    )
-    
-    # Rename for clarity
-    df_with_pu_location = df_with_pu_location.withColumnRenamed("Borough", "pickup_borough") \
-                                             .withColumnRenamed("Zone", "pickup_zone") \
-                                             .withColumnRenamed("service_zone", "pickup_service_zone") \
-                                             .drop(col("LocationID"))
-
-    # BAD PRACTICE 5 (Still Naive): Another massive shuffle.
-    df_with_locations = df_with_pu_location.join(
-        taxi_zone_lookup_df,
-        col("std_DOLocationID") == col("LocationID"),
-        "inner"
+    df_1 = spark.read.schema(SCHEMA_LONG).parquet(*files_1).select(
+        coalesce(col("tpep_pickup_datetime"), to_timestamp(col("pickup_datetime"))).alias("pickup_datetime"),
+        coalesce(col("tpep_dropoff_datetime"), to_timestamp(col("dropoff_datetime"))).alias("dropoff_datetime"),
+        col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
+        col("passenger_count").cast(IntegerType()),
+        col("airport_fee") # Already Double
     )
 
-    df_with_locations = df_with_locations.withColumnRenamed("Borough", "dropoff_borough") \
-                                         .withColumnRenamed("Zone", "dropoff_zone") \
-                                         .withColumnRenamed("service_zone", "dropoff_service_zone") \
-                                         .drop(col("LocationID"))
+    # --- BATCH 2: The "Double" Era (2018-07 to 2024-09) ---
+    print("Reading Batch 2 (2018-07 to 2024-09)...")
+    files_2 = generate_file_list(2018, 7, 2024, 9)
     
+    df_2 = spark.read.schema(SCHEMA_DOUBLE).parquet(*files_2).select(
+        col("tpep_pickup_datetime").alias("pickup_datetime"),
+        col("tpep_dropoff_datetime").alias("dropoff_datetime"),
+        col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
+        col("passenger_count").cast(IntegerType()), # Cast Double -> Int
+        coalesce(col("airport_fee"), col("Airport_fee")).alias("airport_fee")
+    )
+
+    # --- BATCH 3: The "Regression" Era (2024-10 to 2024-12) ---
+    # This uses SCHEMA_LONG again because passenger_count reverted to Long
+    print("Reading Batch 3 (2024-10 to 2024-12)...")
+    files_3 = generate_file_list(2024, 10, 2024, 12)
     
-    # --- 4. Data Cleaning and Feature Engineering ---
-    
-    print("Cleaning data and engineering features...")
-    
-    # We must cast to TimestampType() *first* before casting to double.
-    df_cleaned = df_with_locations.withColumn(
+    df_3 = spark.read.schema(SCHEMA_LONG).parquet(*files_3).select(
+        coalesce(col("tpep_pickup_datetime"), to_timestamp(col("pickup_datetime"))).alias("pickup_datetime"),
+        coalesce(col("tpep_dropoff_datetime"), to_timestamp(col("dropoff_datetime"))).alias("dropoff_datetime"),
+        col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
+        col("passenger_count").cast(IntegerType()),
+        col("airport_fee")
+    )
+
+    # --- UNION ---
+    print("Unioning datasets...")
+    raw_df = df_1.unionByName(df_2).unionByName(df_3)
+
+    # --- FEATURE ENGINEERING ---
+    print("Calculating trip duration...")
+    # Use TimestampType cast to fix NTZ error
+    df_features = raw_df.withColumn(
         "trip_duration_mins",
         round(
-            (col("std_dropoff_datetime").cast(TimestampType()).cast("double") - \
-             col("std_pickup_datetime").cast(TimestampType()).cast("double")) / 60, 
+            (col("dropoff_datetime").cast(TimestampType()).cast("double") - \
+             col("pickup_datetime").cast(TimestampType()).cast("double")) / 60, 
             2
         )
     )
-    
-    # Filter out "bad" data using standardized columns
-    df_cleaned = df_cleaned.filter(
-        (col("std_trip_distance") > 0) &
-        (col("std_total_amount") > 0) &
-        (col("std_passenger_count") > 0) &
-        (col("trip_duration_mins") > 1) &
-        (col("trip_duration_mins") < 240) # Filter trips longer than 4 hours
-    )
-    
-    # Select only the columns we need for the final analytics
-    final_df = df_cleaned.select(
-        col("std_pickup_datetime").alias("tpep_pickup_datetime"),
-        "trip_duration_mins",
-        col("std_trip_distance").alias("trip_distance"),
-        col("std_total_amount").alias("total_amount"),
-        col("std_passenger_count").alias("passenger_count"),
-        "pickup_borough",
-        "dropoff_borough"
+
+    # --- FILTERING ---
+    print("Filtering invalid rows...")
+    df_filtered = df_features.filter(
+        (col("trip_distance") > 0) & 
+        (col("total_amount") > 0) & 
+        (col("trip_duration_mins") > 1) & 
+        (col("trip_duration_mins") < 240) & 
+        (col("PULocationID").isNotNull()) & 
+        (col("DOLocationID").isNotNull())
     )
 
-    # --- 5. Baseline Analytics (Bottleneck Kept) ---
+    # --- JOIN ---
+    print("Performing BROADCAST Joins...")
+    pickup_zones = taxi_zone_lookup_df.alias("pickup_zones")
+    dropoff_zones = taxi_zone_lookup_df.alias("dropoff_zones")
     
-    print("Running baseline analytics...")
-    
-    # BAD PRACTICE 6 (Still Naive): A wide aggregation (groupBy)
-    analytics_df = final_df.groupBy("pickup_borough").agg(
-        avg("trip_distance").alias("avg_trip_distance"),
-        avg("total_amount").alias("avg_total_amount"),
-        max("trip_duration_mins").alias("max_trip_duration"),
-        count(lit(1)).alias("total_trips")
+    df_joined = df_filtered.join(
+        broadcast(pickup_zones), 
+        col("PULocationID") == col("pickup_zones.LocationID"),
+        "inner"
+    ).join(
+        broadcast(dropoff_zones), 
+        col("DOLocationID") == col("dropoff_zones.LocationID"),
+        "inner"
+    ).select(
+        df_filtered["*"],
+        col("pickup_zones.Borough").alias("pickup_borough"),
+        col("dropoff_zones.Borough").alias("dropoff_borough")
     )
+
+    # --- CACHING & ANALYTICS ---
+    print("Caching transformed dataset...")
+    df_joined.cache()
     
+    # Just one analytics action to verify correctness and trigger cache
+    print("--- Top Pickup Boroughs ---")
+    df_joined.groupBy("pickup_borough").count().orderBy(col("count").desc()).show(truncate=False)
     
-    # --- 6. Action: Show and Write Results ---
-    
-    # BAD PRACTICE 7 (Still Naive): Triggering the *entire* DAG (computation) twice.
-    print("--- Analytics Results (Intermediate) ---")
-    analytics_df.show(truncate=False)
-    
-    print("Writing cleaned data to 'data/cleaned_trips_intermediate'...")
-    final_df.write \
+    print("--- Avg Metrics by Borough ---")
+    df_joined.groupBy("pickup_borough").agg(
+        avg("trip_distance").alias("avg_dist"),
+        avg("total_amount").alias("avg_cost"),
+        avg("trip_duration_mins").alias("avg_time"),
+        avg("passenger_count").alias("avg_passengers"),
+        avg("airport_fee").alias("avg_airport_fee")
+    ).orderBy(col("avg_cost").desc()).show(truncate=False)
+
+    # --- WRITE ---
+    print("Writing final optimized dataset...")
+    df_joined.coalesce(10).write \
         .mode("overwrite") \
-        .parquet("data/cleaned_trips_intermediate")
-
-    print("--- Intermediate Job Complete ---")
+        .parquet("data/cleaned_trips_optimized")
+        
+    print("Optimization Job Complete.")
 
 if __name__ == "__main__":
-    spark_session = create_spark_session()
-    run_intermediate_etl_and_analytics(spark_session)
-    spark_session.stop()
+    spark = create_optimized_spark_session()
+    run_optimized_etl(spark)
+    spark.stop()
