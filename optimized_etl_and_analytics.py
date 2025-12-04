@@ -10,35 +10,50 @@ def create_optimized_spark_session():
         .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
         .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
         .config("spark.sql.caseSensitive", "true") \
-        .config("spark.sql.parquet.enableVectorizedReader", "false") \
+        .config("spark.sql.parquet.enableVectorizedReader", "true") \
         .getOrCreate()
+        # Vectorized reader works for 2011 (Double dicts) and 2018+ (Double types)
+        # It might fail on 2012-2017 (Long types cast to Double), so we might need
+        # to be careful, but let's try keeping it enabled as it's fastest.
     return spark
 
 # --- SCHEMAS ---
-# We need TWO schemas because the data type of 'passenger_count' 
-# changed from Long to Double in July 2018.
 
-# Schema A: 2011 - June 2018 (Passenger Count is Long)
-SCHEMA_ERA_1 = StructType([
+# Schema A: 2011 ONLY (Many doubles, dict encoding)
+SCHEMA_2011 = StructType([
     StructField("tpep_pickup_datetime", TimestampNTZType(), True),
     StructField("tpep_dropoff_datetime", TimestampNTZType(), True),
     StructField("trip_distance", DoubleType(), True),
     StructField("total_amount", DoubleType(), True),
-    StructField("passenger_count", LongType(), True), # <--- LONG
+    StructField("passenger_count", LongType(), True),
     StructField("PULocationID", LongType(), True),
     StructField("DOLocationID", LongType(), True),
-    # Compatibility fields
+    # 2011 files are weird, exclude airport_fee entirely
     StructField("pickup_datetime", StringType(), True),
     StructField("dropoff_datetime", StringType(), True),
 ])
 
-# Schema B: July 2018 - 2024 (Passenger Count is Double)
-SCHEMA_ERA_2 = StructType([
+# Schema B: 2012 - June 2018 (Stable Long types)
+SCHEMA_2012_2018 = StructType([
     StructField("tpep_pickup_datetime", TimestampNTZType(), True),
     StructField("tpep_dropoff_datetime", TimestampNTZType(), True),
     StructField("trip_distance", DoubleType(), True),
     StructField("total_amount", DoubleType(), True),
-    StructField("passenger_count", DoubleType(), True), # <--- DOUBLE
+    StructField("passenger_count", LongType(), True),
+    StructField("PULocationID", LongType(), True),
+    StructField("DOLocationID", LongType(), True),
+    # airport_fee absent or unstable, exclude
+    StructField("pickup_datetime", StringType(), True),
+    StructField("dropoff_datetime", StringType(), True),
+])
+
+# Schema C: July 2018 - 2024 (Double types)
+SCHEMA_2018_2024 = StructType([
+    StructField("tpep_pickup_datetime", TimestampNTZType(), True),
+    StructField("tpep_dropoff_datetime", TimestampNTZType(), True),
+    StructField("trip_distance", DoubleType(), True),
+    StructField("total_amount", DoubleType(), True),
+    StructField("passenger_count", DoubleType(), True), 
     StructField("PULocationID", LongType(), True),
     StructField("DOLocationID", LongType(), True),
     StructField("airport_fee", DoubleType(), True),
@@ -46,67 +61,66 @@ SCHEMA_ERA_2 = StructType([
 ])
 
 def run_optimized_etl(spark):
-    print("--- Starting Optimized ETL Job (Split-Era Strategy) ---")
+    print("--- Starting Optimized ETL Job (Triple-Split Strategy) ---")
 
     print("Reading lookup table...")
     taxi_zone_lookup_df = spark.read \
         .option("header", "true") \
         .option("inferSchema", "true") \
         .csv("data/taxi_zone_lookup.csv") \
-        .alias("zones") # Alias early to prevent ambiguity
+        .alias("zones") 
 
-    # --- STEP 1: READ BATCH 1 (The Integer Era: 2011 - June 2018) ---
-    print("Reading Batch 1: 2011 to June 2018 (Integer Schema)...")
-    
-    # We construct the list of files for this era manually to be precise
-    files_era_1 = []
-    # 2011-2017 (Full years)
-    files_era_1.extend(["data/raw/yellow_tripdata_201*.parquet"])
-    # 2018 Jan-Jun (Specific months)
-    files_era_1.extend([f"data/raw/yellow_tripdata_2018-0{i}.parquet" for i in range(1, 7)])
-
-    df_era_1 = spark.read \
-        .schema(SCHEMA_ERA_1) \
-        .parquet(*files_era_1) \
+    # --- BATCH 1: 2011 ---
+    print("Reading Batch 1: 2011...")
+    df_2011 = spark.read.schema(SCHEMA_2011).parquet("data/raw/yellow_tripdata_2011*.parquet") \
         .select(
             coalesce(col("tpep_pickup_datetime"), to_timestamp(col("pickup_datetime"))).alias("pickup_datetime"),
             coalesce(col("tpep_dropoff_datetime"), to_timestamp(col("dropoff_datetime"))).alias("dropoff_datetime"),
-            col("PULocationID"),
-            col("DOLocationID"),
-            col("trip_distance"),
-            col("total_amount"),
-            col("passenger_count").cast(IntegerType()) # Already Long, safe cast
+            col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
+            col("passenger_count").cast(IntegerType()),
+            lit(0.0).alias("airport_fee")
         )
 
-    # --- STEP 2: READ BATCH 2 (The Double Era: July 2018 - 2024) ---
-    print("Reading Batch 2: July 2018 to 2024 (Double Schema)...")
-    
-    files_era_2 = []
-    # 2018 Jul-Dec
-    files_era_2.extend([f"data/raw/yellow_tripdata_2018-{i:02d}.parquet" for i in range(7, 13)])
-    # 2019-2024 (Full years)
-    files_era_2.extend(["data/raw/yellow_tripdata_2019*.parquet", "data/raw/yellow_tripdata_202*.parquet"])
+    # --- BATCH 2: 2012 - June 2018 ---
+    print("Reading Batch 2: 2012 to June 2018...")
+    files_2012_2018 = []
+    for year in range(2012, 2018):
+        files_2012_2018.append(f"data/raw/yellow_tripdata_{year}*.parquet")
+    for i in range(1, 7):
+        files_2012_2018.append(f"data/raw/yellow_tripdata_2018-0{i}.parquet")
 
-    df_era_2 = spark.read \
-        .schema(SCHEMA_ERA_2) \
-        .parquet(*files_era_2) \
+    df_2012_2018 = spark.read.schema(SCHEMA_2012_2018).parquet(*files_2012_2018) \
+        .select(
+            coalesce(col("tpep_pickup_datetime"), to_timestamp(col("pickup_datetime"))).alias("pickup_datetime"),
+            coalesce(col("tpep_dropoff_datetime"), to_timestamp(col("dropoff_datetime"))).alias("dropoff_datetime"),
+            col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
+            col("passenger_count").cast(IntegerType()),
+            lit(0.0).alias("airport_fee")
+        )
+
+    # --- BATCH 3: July 2018 - 2024 ---
+    print("Reading Batch 3: July 2018 to 2024...")
+    files_2018_2024 = []
+    for i in range(7, 13):
+        files_2018_2024.append(f"data/raw/yellow_tripdata_2018-{i:02d}.parquet")
+    files_2018_2024.append("data/raw/yellow_tripdata_2019*.parquet")
+    files_2018_2024.append("data/raw/yellow_tripdata_202*.parquet")
+
+    df_2018_2024 = spark.read.schema(SCHEMA_2018_2024).parquet(*files_2018_2024) \
         .select(
             col("tpep_pickup_datetime").alias("pickup_datetime"),
             col("tpep_dropoff_datetime").alias("dropoff_datetime"),
-            col("PULocationID"),
-            col("DOLocationID"),
-            col("trip_distance"),
-            col("total_amount"),
-            col("passenger_count").cast(IntegerType()) # Cast Double -> Int
+            col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
+            col("passenger_count").cast(IntegerType()),
+            coalesce(col("airport_fee"), col("Airport_fee")).cast(DoubleType()).alias("airport_fee")
         )
 
-    # --- STEP 3: UNION ---
+    # --- UNION ---
     print("Unioning datasets...")
-    raw_df = df_era_1.unionByName(df_era_2)
+    raw_df = df_2011.unionByName(df_2012_2018).unionByName(df_2018_2024)
 
-    # --- STEP 4: FEATURE ENGINEERING ---
+    # --- FEATURE ENGINEERING ---
     print("Calculating trip duration...")
-    # FIX: Cast TimestampNTZ -> Timestamp -> Double to get epoch seconds
     df_features = raw_df.withColumn(
         "trip_duration_mins",
         round(
@@ -116,7 +130,7 @@ def run_optimized_etl(spark):
         )
     )
 
-    # --- STEP 5: FILTERING ---
+    # --- FILTERING ---
     print("Filtering invalid rows...")
     df_filtered = df_features.filter(
         (col("trip_distance") > 0) & 
@@ -127,10 +141,8 @@ def run_optimized_etl(spark):
         (col("DOLocationID").isNotNull())
     )
 
-    # --- STEP 6: OPTIMIZED JOIN (Broadcast) ---
+    # --- JOIN ---
     print("Performing BROADCAST Joins...")
-    
-    # Create Aliases for the lookup table
     pickup_zones = taxi_zone_lookup_df.alias("pickup_zones")
     dropoff_zones = taxi_zone_lookup_df.alias("dropoff_zones")
     
@@ -148,24 +160,29 @@ def run_optimized_etl(spark):
         col("dropoff_zones.Borough").alias("dropoff_borough")
     )
 
-    # --- STEP 7: CACHING & ANALYTICS ---
+    # --- CACHING & ANALYTICS ---
     print("Caching transformed dataset...")
+    # We do NOT call count() here to avoid triggering the job prematurely.
+    # We let the analytics actions trigger the cache.
     df_joined.cache()
     
-    print(f"Total processed rows: {df_joined.count()}")
-
+    print("Running Analytics...")
+    
+    # Top Boroughs
     print("--- Top Pickup Boroughs ---")
     df_joined.groupBy("pickup_borough").count().orderBy(col("count").desc()).show(truncate=False)
 
+    # Avg Metrics
     print("--- Avg Metrics by Borough ---")
     df_joined.groupBy("pickup_borough").agg(
         avg("trip_distance").alias("avg_dist"),
         avg("total_amount").alias("avg_cost"),
         avg("trip_duration_mins").alias("avg_time"),
-        avg("passenger_count").alias("avg_passengers")
+        avg("passenger_count").alias("avg_passengers"),
+        avg("airport_fee").alias("avg_airport_fee")
     ).orderBy(col("avg_cost").desc()).show(truncate=False)
 
-    # --- STEP 8: WRITE ---
+    # --- WRITE ---
     print("Writing final optimized dataset (coalesced)...")
     df_joined.coalesce(10).write \
         .mode("overwrite") \
@@ -176,4 +193,4 @@ def run_optimized_etl(spark):
 if __name__ == "__main__":
     spark = create_optimized_spark_session()
     run_optimized_etl(spark)
-    spark.stop() 
+    spark.stop()
