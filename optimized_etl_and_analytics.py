@@ -132,26 +132,30 @@ def run_optimized_etl(spark):
     # We broadcast the small lookup table. This prevents a Shuffle.
     print("Performing BROADCAST Joins...")
     
+    # FIX: Create ALIASES for the lookup table to avoid ambiguity errors
+    pickup_zones = taxi_zone_lookup_df.alias("pickup_zones")
+    dropoff_zones = taxi_zone_lookup_df.alias("dropoff_zones")
+    
     # Join for Pickup Location
     df_joined = df_filtered.join(
-        broadcast(taxi_zone_lookup_df), # <--- OPTIMIZATION
-        df_filtered.PULocationID == taxi_zone_lookup_df.LocationID,
+        broadcast(pickup_zones), # <--- OPTIMIZATION
+        col("PULocationID") == col("pickup_zones.LocationID"),
         "inner"
     ).select(
         df_filtered["*"],
-        taxi_zone_lookup_df["Borough"].alias("pickup_borough")
+        col("pickup_zones.Borough").alias("pickup_borough")
     )
 
     # Join for Dropoff Location (Reuse broadcast)
     # Note: We do a second join. Since the lookup table is tiny and broadcasted,
     # this is extremely cheap.
     df_final = df_joined.join(
-        broadcast(taxi_zone_lookup_df), # <--- OPTIMIZATION
-        df_joined.DOLocationID == taxi_zone_lookup_df.LocationID,
+        broadcast(dropoff_zones), # <--- OPTIMIZATION
+        col("DOLocationID") == col("dropoff_zones.LocationID"),
         "inner"
     ).select(
         df_joined["*"],
-        taxi_zone_lookup_df["Borough"].alias("dropoff_borough")
+        col("dropoff_zones.Borough").alias("dropoff_borough")
     )
 
     # 7. Caching
