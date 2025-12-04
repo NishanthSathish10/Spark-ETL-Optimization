@@ -1,20 +1,18 @@
---- Starting Optimized ETL Job (Triple-Split Strategy) ---
+--- Starting Optimized ETL Job (Pruned Schema Strategy) ---
 Reading lookup table...
-Reading Batch 1: 2011...
-Reading Batch 2: 2012 to June 2018...
-Reading Batch 3: July 2018 to 2024...
+Reading Group 1 (Long Passengers)...
+Reading Group 2 (Double Passengers)...
 Unioning datasets...
 Calculating trip duration...
 Filtering invalid rows...
 Performing BROADCAST Joins...
 Caching transformed dataset...
-Running Analytics...
 --- Top Pickup Boroughs ---
 Traceback (most recent call last):
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/optimized_etl_and_analytics.py", line 195, in <module>
+  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/optimized_etl_and_analytics.py", line 188, in <module>
     run_optimized_etl(spark)
     ~~~~~~~~~~~~~~~~~^^^^^^^
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/optimized_etl_and_analytics.py", line 173, in run_optimized_etl
+  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/optimized_etl_and_analytics.py", line 167, in run_optimized_etl
     df_joined.groupBy("pickup_borough").count().orderBy(col("count").desc()).show(truncate=False)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
   File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/pyspark.zip/pyspark/sql/classic/dataframe.py", line 285, in show
@@ -32,17 +30,16 @@ Traceback (most recent call last):
     raise Py4JJavaError(
         "An error occurred while calling {0}{1}{2}.\n".
         format(target_id, ".", name), value)
-py4j.protocol.Py4JJavaError: An error occurred while calling o288.showString.
-: org.apache.spark.SparkException: [FAILED_READ_FILE.PARQUET_COLUMN_DATA_TYPE_MISMATCH] Encountered error while reading file file:///Users/nish/UMass/532%20-%20Systems%20for%20Data%20Science/project/Spark-ETL-Optimization/data/raw/yellow_tripdata_2024-10.parquet. Data type mismatches when reading Parquet column [passenger_count]. Expected Spark type double, actual Parquet type INT64. SQLSTATE: KD001
-	at org.apache.spark.sql.errors.QueryExecutionErrors$.parquetColumnDataTypeMismatchError(QueryExecutionErrors.scala:847)
-	at org.apache.spark.sql.execution.datasources.v2.FileDataSourceV2$.attachFilePath(FileDataSourceV2.scala:138)
+py4j.protocol.Py4JJavaError: An error occurred while calling o240.showString.
+: org.apache.spark.SparkException: [FAILED_READ_FILE.NO_HINT] Encountered error while reading file file:///Users/nish/UMass/532%20-%20Systems%20for%20Data%20Science/project/Spark-ETL-Optimization/data/raw/yellow_tripdata_2024-05.parquet.  SQLSTATE: KD001
+	at org.apache.spark.sql.errors.QueryExecutionErrors$.cannotReadFilesError(QueryExecutionErrors.scala:856)
+	at org.apache.spark.sql.execution.datasources.v2.FileDataSourceV2$.attachFilePath(FileDataSourceV2.scala:142)
 	at org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext(FileScanRDD.scala:142)
-	at org.apache.spark.sql.execution.FileSourceScanExec$$anon$1.hasNext(DataSourceScanExec.scala:695)
-	at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage5.columnartorow_nextBatch_0$(Unknown Source)
-	at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage5.processNext(Unknown Source)
+	at scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:583)
+	at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage4.processNext(Unknown Source)
 	at org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:43)
 	at org.apache.spark.sql.execution.WholeStageCodegenEvaluatorFactory$WholeStageCodegenPartitionEvaluator$$anon$1.hasNext(WholeStageCodegenEvaluatorFactory.scala:50)
-	at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage6.processNext(Unknown Source)
+	at org.apache.spark.sql.catalyst.expressions.GeneratedClass$GeneratedIteratorForCodegenStage5.processNext(Unknown Source)
 	at org.apache.spark.sql.execution.BufferedRowIterator.hasNext(BufferedRowIterator.java:43)
 	at org.apache.spark.sql.execution.WholeStageCodegenEvaluatorFactory$WholeStageCodegenPartitionEvaluator$$anon$1.hasNext(WholeStageCodegenEvaluatorFactory.scala:50)
 	at org.apache.spark.sql.execution.columnar.DefaultCachedBatchSerializer$$anon$1.hasNext(InMemoryRelation.scala:121)
@@ -67,16 +64,31 @@ py4j.protocol.Py4JJavaError: An error occurred while calling o288.showString.
 	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
 	at java.base/java.lang.Thread.run(Thread.java:840)
-Caused by: org.apache.spark.sql.execution.datasources.SchemaColumnConvertNotSupportedException: column: [passenger_count], physicalType: INT64, logicalType: double
-	at org.apache.spark.sql.execution.datasources.parquet.ParquetVectorUpdaterFactory.constructConvertNotSupportedException(ParquetVectorUpdaterFactory.java:1602)
-	at org.apache.spark.sql.execution.datasources.parquet.ParquetVectorUpdaterFactory.getUpdater(ParquetVectorUpdaterFactory.java:226)
-	at org.apache.spark.sql.execution.datasources.parquet.VectorizedColumnReader.readBatch(VectorizedColumnReader.java:210)
-	at org.apache.spark.sql.execution.datasources.parquet.VectorizedParquetRecordReader.nextBatch(VectorizedParquetRecordReader.java:341)
-	at org.apache.spark.sql.execution.datasources.parquet.VectorizedParquetRecordReader.nextKeyValue(VectorizedParquetRecordReader.java:234)
+Caused by: org.apache.parquet.io.ParquetDecodingException: Can not read value at 0 in block -1 in file file:/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/data/raw/yellow_tripdata_2024-05.parquet
+	at org.apache.parquet.hadoop.InternalParquetRecordReader.nextKeyValue(InternalParquetRecordReader.java:280)
+	at org.apache.parquet.hadoop.ParquetRecordReader.nextKeyValue(ParquetRecordReader.java:207)
 	at org.apache.spark.sql.execution.datasources.RecordReaderIterator.hasNext(RecordReaderIterator.scala:39)
+	at org.apache.spark.sql.execution.datasources.RecordReaderIterator$$anon$1.hasNext(RecordReaderIterator.scala:61)
 	at org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext0(FileScanRDD.scala:131)
 	at org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.nextIterator(FileScanRDD.scala:292)
 	at org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext0(FileScanRDD.scala:131)
 	at org.apache.spark.sql.execution.datasources.FileScanRDD$$anon$1.hasNext(FileScanRDD.scala:140)
-	... 30 more
+	... 29 more
+Caused by: java.lang.UnsupportedOperationException: org.apache.parquet.column.values.dictionary.PlainValuesDictionary$PlainDoubleDictionary
+	at org.apache.parquet.column.Dictionary.decodeToBinary(Dictionary.java:41)
+	at org.apache.spark.sql.execution.datasources.parquet.ParquetRowConverter$ParquetStringConverter.$anonfun$setDictionary$1(ParquetRowConverter.scala:572)
+	at org.apache.spark.sql.execution.datasources.parquet.ParquetRowConverter$ParquetStringConverter.$anonfun$setDictionary$1$adapted(ParquetRowConverter.scala:571)
+	at scala.Array$.tabulate(Array.scala:441)
+	at org.apache.spark.sql.execution.datasources.parquet.ParquetRowConverter$ParquetStringConverter.setDictionary(ParquetRowConverter.scala:571)
+	at org.apache.parquet.column.impl.ColumnReaderBase.<init>(ColumnReaderBase.java:460)
+	at org.apache.parquet.column.impl.ColumnReaderImpl.<init>(ColumnReaderImpl.java:42)
+	at org.apache.parquet.column.impl.ColumnReadStoreImpl.getColumnReader(ColumnReadStoreImpl.java:80)
+	at org.apache.parquet.io.RecordReaderImplementation.<init>(RecordReaderImplementation.java:282)
+	at org.apache.parquet.io.MessageColumnIO$1.visit(MessageColumnIO.java:141)
+	at org.apache.parquet.io.MessageColumnIO$1.visit(MessageColumnIO.java:105)
+	at org.apache.parquet.filter2.compat.FilterCompat$NoOpFilter.accept(FilterCompat.java:186)
+	at org.apache.parquet.io.MessageColumnIO.getRecordReader(MessageColumnIO.java:105)
+	at org.apache.parquet.hadoop.InternalParquetRecordReader.checkRead(InternalParquetRecordReader.java:156)
+	at org.apache.parquet.hadoop.InternalParquetRecordReader.nextKeyValue(InternalParquetRecordReader.java:245)
+	... 36 more
 
