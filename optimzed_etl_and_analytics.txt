@@ -1,4 +1,4 @@
---- Starting Optimized ETL Job (3-Era Strategy) ---
+--- Starting Optimized ETL Job (Streaming Strategy / No Cache) ---
 Reading lookup table...
 Reading Batch 1: Legacy (Longs)...
 Reading Batch 2: Middle (Doubles)...
@@ -7,14 +7,7 @@ Unioning datasets...
 Calculating trip duration...
 Filtering invalid rows...
 Performing BROADCAST Joins...
-Caching transformed dataset...
-[525.797s][warning][gc,alloc] Executor task launch worker for task 76.0 in stage 5.0 (TID 224): Retried waiting for GCLocker too often allocating 179978 words
-[525.855s][warning][gc,alloc] Executor task launch worker for task 71.0 in stage 5.0 (TID 219): Retried waiting for GCLocker too often allocating 189485 words
-[525.855s][warning][gc,alloc] Executor task launch worker for task 72.0 in stage 5.0 (TID 220): Retried waiting for GCLocker too often allocating 199902 words
-[525.856s][warning][gc,alloc] Executor task launch worker for task 65.0 in stage 5.0 (TID 213): Retried waiting for GCLocker too often allocating 159915 words
-[525.927s][warning][gc,alloc] Executor task launch worker for task 72.0 in stage 5.0 (TID 220): Retried waiting for GCLocker too often allocating 206956 words
-Total processed rows: 1417281975
---- Top Pickup Boroughs ---
+Running Analytics (Pass 1: Top Boroughs)...
 +--------------+----------+
 |pickup_borough|count     |
 +--------------+----------+
@@ -28,82 +21,19 @@ Total processed rows: 1417281975
 |EWR           |12477     |
 +--------------+----------+
 
---- Avg Metrics by Borough ---
-[1019.985s][warning][gc,alloc] Executor task launch worker for task 16.0 in stage 12.0 (TID 661): Retried waiting for GCLocker too often allocating 131074 words
-[1019.990s][warning][gc,alloc] Executor task launch worker for task 23.0 in stage 12.0 (TID 668): Retried waiting for GCLocker too often allocating 170967 words
-Traceback (most recent call last):
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/optimized_etl_and_analytics.py", line 199, in <module>
-    run_optimized_etl(spark)
-    ~~~~~~~~~~~~~~~~~^^^^^^^
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/optimized_etl_and_analytics.py", line 187, in run_optimized_etl
-    ).orderBy(col("avg_cost").desc()).show(truncate=False)
-                                      ~~~~^^^^^^^^^^^^^^^^
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/pyspark.zip/pyspark/sql/classic/dataframe.py", line 285, in show
-    print(self._show_string(n, truncate, vertical))
-          ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/pyspark.zip/pyspark/sql/classic/dataframe.py", line 316, in _show_string
-    return self._jdf.showString(n, int_truncate, vertical)
-           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/py4j-0.10.9.9-src.zip/py4j/java_gateway.py", line 1362, in __call__
-    return_value = get_return_value(
-        answer, self.gateway_client, self.target_id, self.name)
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/pyspark.zip/pyspark/errors/exceptions/captured.py", line 282, in deco
-    return f(*a, **kw)
-  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/py4j-0.10.9.9-src.zip/py4j/protocol.py", line 327, in get_return_value
-    raise Py4JJavaError(
-        "An error occurred while calling {0}{1}{2}.\n".
-        format(target_id, ".", name), value)
-py4j.protocol.Py4JJavaError: An error occurred while calling o312.showString.
-: org.apache.spark.SparkException: Job aborted due to stage failure: Task 16 in stage 12.0 failed 1 times, most recent failure: Lost task 16.0 in stage 12.0 (TID 661) (10.0.0.168 executor driver): java.lang.OutOfMemoryError: Java heap space
-	at java.base/java.nio.HeapByteBuffer.<init>(HeapByteBuffer.java:64)
-	at java.base/java.nio.ByteBuffer.allocate(ByteBuffer.java:363)
-	at org.apache.spark.serializer.SerializerHelper$.$anonfun$serializeToChunkedBuffer$1(SerializerHelper.scala:40)
-	at org.apache.spark.serializer.SerializerHelper$.$anonfun$serializeToChunkedBuffer$1$adapted(SerializerHelper.scala:40)
-	at org.apache.spark.serializer.SerializerHelper$$$Lambda$3138/0x000000b001f0d2b0.apply(Unknown Source)
-	at org.apache.spark.util.io.ChunkedByteBufferOutputStream.allocateNewChunkIfNeeded(ChunkedByteBufferOutputStream.scala:87)
-	at org.apache.spark.util.io.ChunkedByteBufferOutputStream.write(ChunkedByteBufferOutputStream.scala:75)
-	at java.base/java.io.ObjectOutputStream$BlockDataOutputStream.drain(ObjectOutputStream.java:1886)
-	at java.base/java.io.ObjectOutputStream$BlockDataOutputStream.setBlockDataMode(ObjectOutputStream.java:1795)
-	at java.base/java.io.ObjectOutputStream.<init>(ObjectOutputStream.java:248)
-	at org.apache.spark.serializer.JavaSerializationStream.<init>(JavaSerializer.scala:36)
-	at org.apache.spark.serializer.JavaSerializerInstance.serializeStream(JavaSerializer.scala:140)
-	at org.apache.spark.serializer.SerializerHelper$.serializeToChunkedBuffer(SerializerHelper.scala:41)
-	at org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:695)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:840)
+Running Analytics (Pass 2: Avg Metrics)...
++--------------+-----------------+------------------+------------------+------------------+---------------------+
+|pickup_borough|avg_dist         |avg_cost          |avg_time          |avg_passengers    |avg_airport_fee      |
++--------------+-----------------+------------------+------------------+------------------+---------------------+
+|EWR           |7.153358980524168|64.67356495952555 |16.308533301274345|1.5501204819277108|0.0013257235304691714|
+|Queens        |17.02230780422371|44.05303739549924 |30.860032837196826|1.6522551054376808|0.22526028182670252  |
+|Staten Island |13.02196955125297|33.47288500970804 |23.560895679471596|1.8027999222243827|4.957223063898048E-4 |
+|Bronx         |23.71337533062953|22.96963261077643 |19.667310105297627|1.6381724425954518|2.0590257104443908E-4|
+|N/A           |9.35297276893296 |21.251818101260668|16.821882801225428|1.9435634787747464|2.1987506553664975E-4|
+|Brooklyn      |9.056097062737264|17.407099338939606|15.346302670977689|1.6586194873421365|7.601889578348105E-5 |
+|Unknown       |5.631626705316879|15.223482100575648|13.495701123910317|1.5811875575529777|0.010454822649708059 |
+|Manhattan     |5.324038179316758|14.383135443049794|12.64651456272479 |1.6289548518260322|4.846710827398245E-5 |
++--------------+-----------------+------------------+------------------+------------------+---------------------+
 
-Driver stacktrace:
-	at org.apache.spark.scheduler.DAGScheduler.$anonfun$abortStage$3(DAGScheduler.scala:2935)
-	at scala.Option.getOrElse(Option.scala:201)
-	at org.apache.spark.scheduler.DAGScheduler.$anonfun$abortStage$2(DAGScheduler.scala:2935)
-	at org.apache.spark.scheduler.DAGScheduler.$anonfun$abortStage$2$adapted(DAGScheduler.scala:2927)
-	at scala.collection.immutable.List.foreach(List.scala:334)
-	at org.apache.spark.scheduler.DAGScheduler.abortStage(DAGScheduler.scala:2927)
-	at org.apache.spark.scheduler.DAGScheduler.$anonfun$handleTaskSetFailed$1(DAGScheduler.scala:1295)
-	at org.apache.spark.scheduler.DAGScheduler.$anonfun$handleTaskSetFailed$1$adapted(DAGScheduler.scala:1295)
-	at scala.Option.foreach(Option.scala:437)
-	at org.apache.spark.scheduler.DAGScheduler.handleTaskSetFailed(DAGScheduler.scala:1295)
-	at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.doOnReceive(DAGScheduler.scala:3207)
-	at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.onReceive(DAGScheduler.scala:3141)
-	at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.onReceive(DAGScheduler.scala:3130)
-	at org.apache.spark.util.EventLoop$$anon$1.run(EventLoop.scala:50)
-Caused by: java.lang.OutOfMemoryError: Java heap space
-	at java.base/java.nio.HeapByteBuffer.<init>(HeapByteBuffer.java:64)
-	at java.base/java.nio.ByteBuffer.allocate(ByteBuffer.java:363)
-	at org.apache.spark.serializer.SerializerHelper$.$anonfun$serializeToChunkedBuffer$1(SerializerHelper.scala:40)
-	at org.apache.spark.serializer.SerializerHelper$.$anonfun$serializeToChunkedBuffer$1$adapted(SerializerHelper.scala:40)
-	at org.apache.spark.serializer.SerializerHelper$$$Lambda$3138/0x000000b001f0d2b0.apply(Unknown Source)
-	at org.apache.spark.util.io.ChunkedByteBufferOutputStream.allocateNewChunkIfNeeded(ChunkedByteBufferOutputStream.scala:87)
-	at org.apache.spark.util.io.ChunkedByteBufferOutputStream.write(ChunkedByteBufferOutputStream.scala:75)
-	at java.base/java.io.ObjectOutputStream$BlockDataOutputStream.drain(ObjectOutputStream.java:1886)
-	at java.base/java.io.ObjectOutputStream$BlockDataOutputStream.setBlockDataMode(ObjectOutputStream.java:1795)
-	at java.base/java.io.ObjectOutputStream.<init>(ObjectOutputStream.java:248)
-	at org.apache.spark.serializer.JavaSerializationStream.<init>(JavaSerializer.scala:36)
-	at org.apache.spark.serializer.JavaSerializerInstance.serializeStream(JavaSerializer.scala:140)
-	at org.apache.spark.serializer.SerializerHelper$.serializeToChunkedBuffer(SerializerHelper.scala:41)
-	at org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:695)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-
+Writing final optimized dataset (Pass 3: Coalesced Write)...
+Optimization Job Complete.

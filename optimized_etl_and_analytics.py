@@ -11,14 +11,14 @@ def create_optimized_spark_session():
         .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
         .config("spark.sql.caseSensitive", "true") \
         .config("spark.sql.parquet.enableVectorizedReader", "false") \
+        .config("spark.memory.fraction", "0.7") \
         .getOrCreate()
+    # Optimization: Lower memory fraction slightly to leave room for execution
     return spark
 
 # --- SCHEMAS ---
 
 # Schema 1: Legacy (2011 - June 2018)
-# - Passenger Count is LONG
-# - No Airport Fee (Exclude to avoid Int/Double crashes in early files)
 SCHEMA_LEGACY = StructType([
     StructField("tpep_pickup_datetime", TimestampNTZType(), True),
     StructField("tpep_dropoff_datetime", TimestampNTZType(), True),
@@ -32,8 +32,6 @@ SCHEMA_LEGACY = StructType([
 ])
 
 # Schema 2: Middle Era (July 2018 - Jan 2023)
-# - Passenger Count is DOUBLE
-# - Airport Fee exists (Double)
 SCHEMA_MIDDLE = StructType([
     StructField("tpep_pickup_datetime", TimestampNTZType(), True),
     StructField("tpep_dropoff_datetime", TimestampNTZType(), True),
@@ -47,8 +45,6 @@ SCHEMA_MIDDLE = StructType([
 ])
 
 # Schema 3: Modern Era (Feb 2023 - 2024)
-# - Passenger Count reverted to LONG
-# - Airport Fee exists (Double)
 SCHEMA_MODERN = StructType([
     StructField("tpep_pickup_datetime", TimestampNTZType(), True),
     StructField("tpep_dropoff_datetime", TimestampNTZType(), True),
@@ -62,7 +58,7 @@ SCHEMA_MODERN = StructType([
 ])
 
 def run_optimized_etl(spark):
-    print("--- Starting Optimized ETL Job (3-Era Strategy) ---")
+    print("--- Starting Optimized ETL Job (Streaming Strategy / No Cache) ---")
 
     print("Reading lookup table...")
     taxi_zone_lookup_df = spark.read \
@@ -102,7 +98,7 @@ def run_optimized_etl(spark):
         coalesce(col("tpep_dropoff_datetime"), to_timestamp(col("dropoff_datetime"))).alias("dropoff_datetime"),
         col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
         col("passenger_count").cast(IntegerType()),
-        lit(0.0).alias("airport_fee") # Add missing fee as 0.0
+        lit(0.0).alias("airport_fee") 
     )
 
     print("Reading Batch 2: Middle (Doubles)...")
@@ -110,7 +106,7 @@ def run_optimized_etl(spark):
         col("tpep_pickup_datetime").alias("pickup_datetime"),
         col("tpep_dropoff_datetime").alias("dropoff_datetime"),
         col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
-        col("passenger_count").cast(IntegerType()), # Cast Double -> Int
+        col("passenger_count").cast(IntegerType()),
         coalesce(col("airport_fee"), col("Airport_fee")).alias("airport_fee")
     )
 
@@ -119,7 +115,7 @@ def run_optimized_etl(spark):
         col("tpep_pickup_datetime").alias("pickup_datetime"),
         col("tpep_dropoff_datetime").alias("dropoff_datetime"),
         col("PULocationID"), col("DOLocationID"), col("trip_distance"), col("total_amount"),
-        col("passenger_count").cast(IntegerType()), # Already Long
+        col("passenger_count").cast(IntegerType()),
         coalesce(col("airport_fee"), col("Airport_fee")).alias("airport_fee")
     )
 
@@ -168,16 +164,14 @@ def run_optimized_etl(spark):
         col("dropoff_zones.Borough").alias("dropoff_borough")
     )
 
-    # --- CACHING & ANALYTICS ---
-    print("Caching transformed dataset...")
-    df_joined.cache()
-    
-    print(f"Total processed rows: {df_joined.count()}")
+    # --- REMOVED CACHING & COUNT ---
+    # We skip .cache() and .count() to avoid holding 1.4B rows in memory.
+    # This prevents the OOM error on your laptop.
 
-    print("--- Top Pickup Boroughs ---")
+    print("Running Analytics (Pass 1: Top Boroughs)...")
     df_joined.groupBy("pickup_borough").count().orderBy(col("count").desc()).show(truncate=False)
 
-    print("--- Avg Metrics by Borough ---")
+    print("Running Analytics (Pass 2: Avg Metrics)...")
     df_joined.groupBy("pickup_borough").agg(
         avg("trip_distance").alias("avg_dist"),
         avg("total_amount").alias("avg_cost"),
@@ -187,7 +181,8 @@ def run_optimized_etl(spark):
     ).orderBy(col("avg_cost").desc()).show(truncate=False)
 
     # --- WRITE ---
-    print("Writing final optimized dataset (coalesced)...")
+    print("Writing final optimized dataset (Pass 3: Coalesced Write)...")
+    # This will re-read and re-process the data, but it's safe.
     df_joined.coalesce(10).write \
         .mode("overwrite") \
         .parquet("data/cleaned_trips_optimized")
