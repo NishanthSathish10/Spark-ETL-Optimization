@@ -1,0 +1,28 @@
+--- Starting Optimized ETL Job ---
+Reading lookup table...
+Reading 13 years of taxi data in parallel...
+Projecting and casting columns...
+Calculating trip duration...
+Filtering invalid rows...
+Performing BROADCAST Joins...
+Traceback (most recent call last):
+  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/optimized_etl_and_analytics.py", line 197, in <module>
+    run_optimized_etl(spark)
+    ~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/optimized_etl_and_analytics.py", line 152, in run_optimized_etl
+    ).select(
+      ~~~~~~^
+        df_joined["*"],
+        ^^^^^^^^^^^^^^^
+        taxi_zone_lookup_df["Borough"].alias("dropoff_borough")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/pyspark.zip/pyspark/sql/classic/dataframe.py", line 991, in select
+    jdf = self._jdf.select(self._jcols(*cols))
+  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/py4j-0.10.9.9-src.zip/py4j/java_gateway.py", line 1362, in __call__
+    return_value = get_return_value(
+        answer, self.gateway_client, self.target_id, self.name)
+  File "/Users/nish/UMass/532 - Systems for Data Science/project/Spark-ETL-Optimization/.venv/lib/python3.13/site-packages/pyspark/python/lib/pyspark.zip/pyspark/errors/exceptions/captured.py", line 288, in deco
+    raise converted from None
+pyspark.errors.exceptions.captured.AnalysisException: Column Borough#18 are ambiguous. It's probably because you joined several Datasets together, and some of these Datasets are the same. This column points to one of the Datasets but Spark is unable to figure out which one. Please alias the Datasets with different names via `Dataset.as` before joining them, and specify the column using qualified name, e.g. `df.as("a").join(df.as("b"), $"a.id" > $"b.id")`. You can also set spark.sql.analyzer.failAmbiguousSelfJoin to false to disable this check.
