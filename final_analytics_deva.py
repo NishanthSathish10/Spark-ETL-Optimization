@@ -248,6 +248,152 @@ def run_analytics(spark, output_file="analytics_results.txt"):
     log("\n" + format_dataframe(top_routes))
     insight6_end = time.time()
     log(f"  Query Time: {insight6_end - insight6_start:.2f} seconds")
+    
+    # --- INSIGHT 7: Monthly/Seasonal Patterns ---
+    log("\n" + "=" * 80)
+    log("[7] Monthly/Seasonal Patterns Analysis")
+    log("=" * 80)
+    insight7_start = time.time()
+    
+    monthly_patterns = df_enriched.groupBy("pickup_month") \
+      .agg(
+          count("*").alias("trip_count"),
+          round(avg("total_amount"), 2).alias("avg_fare"),
+          round(avg("trip_distance"), 2).alias("avg_distance"),
+          round(avg("speed_mph"), 2).alias("avg_speed_mph")
+      ) \
+      .orderBy("pickup_month")
+    
+    month_names = {1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
+                   7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"}
+    from pyspark.sql.functions import udf
+    from pyspark.sql.types import StringType
+    month_name_udf = udf(lambda x: month_names.get(x, "Unknown"), StringType())
+    monthly_display = monthly_patterns.withColumn("month_name", month_name_udf(col("pickup_month"))) \
+                                     .select("month_name", "trip_count", "avg_fare", "avg_distance", "avg_speed_mph") \
+                                     .orderBy("pickup_month")
+    
+    monthly_display.show(truncate=False)
+    log("\n" + format_dataframe(monthly_display))
+    insight7_end = time.time()
+    log(f"  Query Time: {insight7_end - insight7_start:.2f} seconds")
+    log("  NOTE: Look for seasonal patterns (summer vs winter)")
+    
+    # --- INSIGHT 8: Airport Trips Analysis ---
+    log("\n" + "=" * 80)
+    log("[8] Airport Trips Analysis (EWR, JFK, LGA)")
+    log("=" * 80)
+    insight8_start = time.time()
+    
+    airport_trips = df_enriched.filter(
+        (col("pickup_borough") == "EWR") | 
+        (col("dropoff_borough") == "EWR") |
+        (col("airport_fee") > 0)
+    ).groupBy("pickup_borough", "dropoff_borough") \
+     .agg(
+         count("*").alias("trip_count"),
+         round(avg("total_amount"), 2).alias("avg_fare"),
+         round(avg("trip_distance"), 2).alias("avg_distance"),
+         round(avg("trip_duration_mins"), 2).alias("avg_duration_mins"),
+         round(sum("airport_fee"), 2).alias("total_airport_fees")
+     ) \
+     .orderBy(desc("trip_count")) \
+     .limit(15)
+    
+    airport_trips.show(truncate=False)
+    log("\n" + format_dataframe(airport_trips))
+    insight8_end = time.time()
+    log(f"  Query Time: {insight8_end - insight8_start:.2f} seconds")
+    
+    # --- INSIGHT 9: Passenger Count Patterns ---
+    log("\n" + "=" * 80)
+    log("[9] Passenger Count Patterns")
+    log("=" * 80)
+    insight9_start = time.time()
+    
+    passenger_patterns = df_enriched.groupBy("passenger_count") \
+      .agg(
+          count("*").alias("trip_count"),
+          round(avg("total_amount"), 2).alias("avg_fare"),
+          round(avg("trip_distance"), 2).alias("avg_distance"),
+          round(avg("trip_duration_mins"), 2).alias("avg_duration_mins")
+      ) \
+      .orderBy("passenger_count")
+    
+    passenger_patterns.show(truncate=False)
+    log("\n" + format_dataframe(passenger_patterns))
+    insight9_end = time.time()
+    log(f"  Query Time: {insight9_end - insight9_start:.2f} seconds")
+    log("  NOTE: Most trips are solo (1 passenger)")
+    
+    # --- INSIGHT 10: Fare Efficiency (Fare per Mile) ---
+    log("\n" + "=" * 80)
+    log("[10] Fare Efficiency Analysis (Fare per Mile by Borough)")
+    log("=" * 80)
+    insight10_start = time.time()
+    
+    fare_efficiency = df_enriched.filter(col("trip_distance") > 0) \
+      .withColumn("fare_per_mile", col("total_amount") / col("trip_distance")) \
+      .groupBy("pickup_borough") \
+      .agg(
+          count("*").alias("trip_count"),
+          round(avg("fare_per_mile"), 2).alias("avg_fare_per_mile"),
+          round(avg("total_amount"), 2).alias("avg_fare"),
+          round(avg("trip_distance"), 2).alias("avg_distance")
+      ) \
+      .orderBy(desc("avg_fare_per_mile"))
+    
+    fare_efficiency.show(truncate=False)
+    log("\n" + format_dataframe(fare_efficiency))
+    insight10_end = time.time()
+    log(f"  Query Time: {insight10_end - insight10_start:.2f} seconds")
+    log("  NOTE: Higher fare/mile indicates premium routes or traffic")
+    
+    # --- INSIGHT 11: Weekend vs Weekday Comparison ---
+    log("\n" + "=" * 80)
+    log("[11] Weekend vs Weekday Patterns")
+    log("=" * 80)
+    insight11_start = time.time()
+    
+    weekend_comparison = df_enriched.withColumn("is_weekend",
+        when((col("pickup_day_of_week") == 1) | (col("pickup_day_of_week") == 7), "Weekend")
+        .otherwise("Weekday")) \
+      .groupBy("is_weekend") \
+      .agg(
+          count("*").alias("trip_count"),
+          round(avg("total_amount"), 2).alias("avg_fare"),
+          round(avg("trip_distance"), 2).alias("avg_distance"),
+          round(avg("speed_mph"), 2).alias("avg_speed_mph"),
+          round(avg("trip_duration_mins"), 2).alias("avg_duration_mins")
+      ) \
+      .orderBy("is_weekend")
+    
+    weekend_comparison.show(truncate=False)
+    log("\n" + format_dataframe(weekend_comparison))
+    insight11_end = time.time()
+    log(f"  Query Time: {insight11_end - insight11_start:.2f} seconds")
+    
+    # --- INSIGHT 12: Peak Hours Analysis (Top 5 Busiest Hours) ---
+    log("\n" + "=" * 80)
+    log("[12] Peak Hours Analysis (Top 10 Busiest Hours)")
+    log("=" * 80)
+    insight12_start = time.time()
+    
+    peak_hours = df_enriched.groupBy("pickup_hour") \
+      .agg(
+          count("*").alias("trip_count"),
+          round(avg("total_amount"), 2).alias("avg_fare"),
+          round(avg("speed_mph"), 2).alias("avg_speed_mph"),
+          round(sum("total_amount"), 2).alias("total_revenue")
+      ) \
+      .orderBy(desc("trip_count")) \
+      .limit(10)
+    
+    peak_hours.show(truncate=False)
+    log("\n" + format_dataframe(peak_hours))
+    insight12_end = time.time()
+    log(f"  Query Time: {insight12_end - insight12_start:.2f} seconds")
+    log("  NOTE: Identifies busiest hours for demand planning")
 
     end_time = time.time()
     total_time = end_time - start_time
