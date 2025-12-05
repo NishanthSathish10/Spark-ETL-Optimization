@@ -1,7 +1,7 @@
 import time
 import pyspark
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lit, round, avg, count, max, to_timestamp, coalesce, broadcast
+from pyspark.sql.functions import col, lit, round, avg, count, max, to_timestamp, coalesce, broadcast, year as spark_year
 from pyspark.sql.types import StructType, StructField, StringType, LongType, DoubleType, IntegerType, TimestampNTZType, TimestampType
 
 def create_optimized_spark_session():
@@ -11,6 +11,14 @@ def create_optimized_spark_session():
         .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
         .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
         .config("spark.sql.caseSensitive", "true") \
+        .config("spark.driver.memory", "16g") \
+        .config("spark.driver.maxResultSize", "8g") \
+        .config("spark.executor.memory", "16g") \
+        .config("spark.memory.fraction", "0.8") \
+        .config("spark.memory.storageFraction", "0.2") \
+        .config("spark.sql.shuffle.partitions", "200") \
+        .config("spark.sql.files.maxPartitionBytes", "256MB") \
+        .config("spark.sql.adaptive.advisoryPartitionSizeInBytes", "128MB") \
         .getOrCreate()
     return spark
 
@@ -146,14 +154,31 @@ def run_optimized_etl(spark):
 
     # 3. Filter Invalid Rows
     # Note: > 0 checks handle NULLs implicitly
+    # DATA QUALITY FIX: Filter out invalid dates (only keep 2011-2024)
+    # This removes trips with dates outside the valid range (2011-2024)
+    print("Applying data quality filters (including date validation 2011-2024)...")
+    rows_before_filter = df_features.count()
+    
     df_filtered = df_features.filter(
         (col("trip_distance") > 0) & 
         (col("total_amount") > 0) & 
         (col("trip_duration_mins") > 1) & 
         (col("trip_duration_mins") < 240) & 
         (col("PULocationID").isNotNull()) & 
-        (col("DOLocationID").isNotNull())
+        (col("DOLocationID").isNotNull()) &
+        (col("pickup_datetime").isNotNull()) &
+        (col("dropoff_datetime").isNotNull()) &
+        (spark_year(col("pickup_datetime")) >= 2011) &
+        (spark_year(col("pickup_datetime")) <= 2024) &
+        (spark_year(col("dropoff_datetime")) >= 2011) &
+        (spark_year(col("dropoff_datetime")) <= 2024)
     )
+    
+    rows_after_filter = df_filtered.count()
+    rows_filtered = rows_before_filter - rows_after_filter
+    print(f"  Rows before filter: {rows_before_filter:,}")
+    print(f"  Rows after filter: {rows_after_filter:,}")
+    print(f"  Rows filtered out: {rows_filtered:,} ({100*rows_filtered/rows_before_filter:.2f}%)")
 
     # Remove "Unknown" and "N/A" boroughs which are valid join keys but invalid for analysis
     # print("Filtering 'Unknown' and 'N/A' boroughs...")
@@ -170,10 +195,14 @@ def run_optimized_etl(spark):
     # --- JOIN ---
     print("Performing BROADCAST Joins...")
     broadcast_join_start = time.time()
-    pickup_zones = taxi_zone_lookup_df.alias("pickup_zones")
-    pickup_zones = pickup_zones.filter((col("pickup_zones.Borough") != "Unknown") & (col("pickup_zones.Borough") != "N/A"))
-    dropoff_zones = taxi_zone_lookup_df.alias("dropoff_zones")
-    dropoff_zones = dropoff_zones.filter((col("dropoff_zones.Borough") != "Unknown") & (col("dropoff_zones.Borough") != "N/A"))
+    # OPTIMIZATION: Filter lookup table once and cache it since it's used twice
+    filtered_lookup = taxi_zone_lookup_df.filter(
+        (col("Borough") != "Unknown") & (col("Borough") != "N/A")
+    )
+    filtered_lookup.cache()  # Cache the filtered lookup table
+    
+    pickup_zones = filtered_lookup.alias("pickup_zones")
+    dropoff_zones = filtered_lookup.alias("dropoff_zones")
 
     df_joined = df_filtered.join(
         broadcast(pickup_zones), 
@@ -209,8 +238,11 @@ def run_optimized_etl(spark):
     # --- WRITE ---
     writing_start = time.time()
     print("Writing final optimized dataset...")
-    df_joined.coalesce(10).write \
+    # OPTIMIZATION: Use repartition instead of coalesce for better distribution
+    # Also increase partition count to reduce memory pressure per partition
+    df_joined.repartition(50).write \
         .mode("overwrite") \
+        .option("compression", "snappy") \
         .parquet("data/cleaned_trips_optimized")
     writing_end = time.time()
     print(f"Writing Time: {writing_end - writing_start:.2f} seconds")
