@@ -11,6 +11,8 @@ dependencies = [
     "requests",
     "tqdm",
     "pandas",
+    "tabulate",
+    "matplotlib",
 ]
 
 [tool.uv.workspace]
