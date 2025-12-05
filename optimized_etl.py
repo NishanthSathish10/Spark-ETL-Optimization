@@ -11,7 +11,6 @@ def create_optimized_spark_session():
         .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
         .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
         .config("spark.sql.caseSensitive", "true") \
-        .config("spark.sql.parquet.enableVectorizedReader", "false") \
         .getOrCreate()
     return spark
 
@@ -56,7 +55,9 @@ SCHEMA_MODERN = StructType([
 ])
 
 def run_optimized_etl(spark):
-    print("--- Starting Optimized ETL Job (Final Clean Strategy) ---")
+    print(" Starting Optimized ETL Job")
+
+    first_load_start = time.time()
 
     print("Reading lookup table...")
     taxi_zone_lookup_df = spark.read \
@@ -112,10 +113,19 @@ def run_optimized_etl(spark):
         coalesce(col("airport_fee"), col("Airport_fee")).alias("airport_fee")
     )
 
+    first_load_end = time.time()
+    print(f"Data Loading Time: {first_load_end - first_load_start:.2f} seconds")
+
+    union_start = time.time()
     print("Unioning datasets...")
     raw_df = df_1.unionByName(df_2).unionByName(df_3)
 
+    union_end = time.time()
+    print(f"Unioning Time: {union_end - union_start:.2f} seconds")
+
+
     # --- CLEANING & FEATURE ENG ---
+    data_cleaning_start = time.time()
     print("Cleaning and calculating features...")
     
     # 1. Fill Numerical Nulls (Safe defaults)
@@ -154,8 +164,12 @@ def run_optimized_etl(spark):
     #     (col("dropoff_borough") != "N/A")
     # )
 
+    data_cleaning_end = time.time()
+    print(f"Data Cleaning Time: {data_cleaning_end - data_cleaning_start:.2f} seconds")
+
     # --- JOIN ---
     print("Performing BROADCAST Joins...")
+    broadcast_join_start = time.time()
     pickup_zones = taxi_zone_lookup_df.alias("pickup_zones")
     pickup_zones = pickup_zones.filter((col("pickup_zones.Borough") != "Unknown") & (col("pickup_zones.Borough") != "N/A"))
     dropoff_zones = taxi_zone_lookup_df.alias("dropoff_zones")
@@ -174,7 +188,8 @@ def run_optimized_etl(spark):
         col("pickup_zones.Borough").alias("pickup_borough"),
         col("dropoff_zones.Borough").alias("dropoff_borough")
     )
-    
+    broadcast_join_end = time.time()
+    print(f"Broadcast Join Time: {broadcast_join_end - broadcast_join_start:.2f} seconds")
 
     # # --- ANALYTICS ---
     # print("Running Analytics...")
@@ -192,11 +207,14 @@ def run_optimized_etl(spark):
     # ).orderBy(col("avg_cost").desc()).show(truncate=False)
 
     # --- WRITE ---
-    print("Writing final optimized dataset (coalesced)...")
+    writing_start = time.time()
+    print("Writing final optimized dataset...")
     df_joined.coalesce(10).write \
         .mode("overwrite") \
         .parquet("data/cleaned_trips_optimized")
-        
+    writing_end = time.time()
+    print(f"Writing Time: {writing_end - writing_start:.2f} seconds")
+
     print("Optimization Job Complete.")
 
 if __name__ == "__main__":

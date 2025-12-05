@@ -209,3 +209,7 @@ __marimo__/
 # Data Downloader Ignore File
 data
 .DS_Store
+naive_equal_coalesce.txt
+naive_etl_output.txt
+naive_etl_vectorization_disabled.txt
+optimized_etl_vanilla.txt

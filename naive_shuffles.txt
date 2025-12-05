@@ -1,0 +1,29 @@
+Reading taxi zone lookup data...
+Finding all yellow taxi data files (2011-2024)...
+Found 168 files. Reading and standardizing one by one...
+  ...processing file 1 of 168: data/raw/yellow_tripdata_2011-01.parquet
+  ...processing file 21 of 168: data/raw/yellow_tripdata_2012-09.parquet
+  ...processing file 41 of 168: data/raw/yellow_tripdata_2014-05.parquet
+  ...processing file 61 of 168: data/raw/yellow_tripdata_2016-01.parquet
+  ...processing file 81 of 168: data/raw/yellow_tripdata_2017-09.parquet
+  ...processing file 101 of 168: data/raw/yellow_tripdata_2019-05.parquet
+  ...processing file 121 of 168: data/raw/yellow_tripdata_2021-01.parquet
+  ...processing file 141 of 168: data/raw/yellow_tripdata_2022-09.parquet
+  ...processing file 161 of 168: data/raw/yellow_tripdata_2024-05.parquet
+...all files processed. Unioning into one large DataFrame...
+--- Unified Schema (Selected Columns) ---
+root
+ |-- std_pickup_datetime: timestamp_ntz (nullable = true)
+ |-- std_dropoff_datetime: timestamp_ntz (nullable = true)
+ |-- std_PULocationID: long (nullable = true)
+ |-- std_DOLocationID: long (nullable = true)
+ |-- std_trip_distance: double (nullable = true)
+ |-- std_total_amount: double (nullable = true)
+ |-- std_passenger_count: integer (nullable = true)
+ |-- std_airport_fee: double (nullable = true)
+
+Applying transformations with Shuffle Joins...
+Cleaning data and engineering features...
+Writing cleaned data to 'data/cleaned_trips_intermediate'...
+--- Intermediate Job Complete ---
+Total Job Time: 1950.37 seconds

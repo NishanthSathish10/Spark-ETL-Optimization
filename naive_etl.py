@@ -3,6 +3,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit, round, avg, count, max, to_timestamp, coalesce
 from pyspark.sql.types import StructType, StructField, StringType, LongType, DoubleType, IntegerType, TimestampNTZType, TimestampType
 import glob # Import glob to find files
+import time
 
 def create_spark_session():
     """
@@ -19,10 +20,12 @@ def create_spark_session():
     as we are now reading files one-by-one.
     """
     spark = SparkSession.builder \
-        .appName("Intermediate_ETL_and_Analytics") \
+        .appName("Naive_ETL") \
         .config("spark.sql.shuffle.partitions", "8") \
         .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
         .config("spark.sql.caseSensitive", "true") \
+        .config("spark.sql.autoBroadcastJoinThreshold", "-1") \
+        .config("spark.sql.adaptive.enabled", "false") \
         .getOrCreate()
     return spark
 
@@ -102,6 +105,15 @@ def standardize_schema(df, file_name):
     else:
          df = df.withColumn("std_passenger_count", lit(None).cast(IntegerType()))
 
+    # --- 8. Standardize Airport Fee ---
+    if "airport_fee" in df_cols and "Airport_fee" in df_cols:
+        df = df.withColumn("std_airport_fee", coalesce(col("airport_fee"), col("Airport_fee")).cast(DoubleType()))
+    elif "airport_fee" in df_cols:
+        df = df.withColumn("std_airport_fee", col("airport_fee").cast(DoubleType()))
+    elif "Airport_fee" in df_cols:
+        df = df.withColumn("std_airport_fee", col("Airport_fee").cast(DoubleType()))
+    else:
+        df = df.withColumn("std_airport_fee", lit(0.0).cast(DoubleType()))
     
     # --- 8. Select *only* the standardized columns ---
     # This ensures every DataFrame has the *exact* same schema
@@ -114,7 +126,8 @@ def standardize_schema(df, file_name):
         "std_DOLocationID",
         "std_trip_distance",
         "std_total_amount",
-        "std_passenger_count"
+        "std_passenger_count",
+        "std_airport_fee",
     ]
     
     return df.select(final_cols)
@@ -135,7 +148,9 @@ def run_intermediate_etl_and_analytics(spark):
         .option("header", "true") \
         .option("inferSchema", "true") \
         .csv("data/taxi_zone_lookup.csv")
-    
+
+    taxi_zone_lookup_df = taxi_zone_lookup_df.filter(~col("Borough").isin(["Unknown","N/A"]))
+
     # --- INTERMEDIATE FIX: Read files one-by-one ---
     # We abandon the master schema and read each file,
     # letting Spark infer its schema, then immediately
@@ -243,6 +258,9 @@ def run_intermediate_etl_and_analytics(spark):
         (col("trip_duration_mins") > 1) &
         (col("trip_duration_mins") < 240) # Filter trips longer than 4 hours
     )
+
+    df_cleaned = df_cleaned.fillna(1, subset=["std_passenger_count"]) \
+                           .fillna(0.0, subset=["std_airport_fee"])
     
     # Select only the columns we need for the final analytics
     final_df = df_cleaned.select(
@@ -251,37 +269,41 @@ def run_intermediate_etl_and_analytics(spark):
         col("std_trip_distance").alias("trip_distance"),
         col("std_total_amount").alias("total_amount"),
         col("std_passenger_count").alias("passenger_count"),
+        col("std_airport_fee").alias("airport_fee"),
         "pickup_borough",
         "dropoff_borough"
     )
 
     # --- 5. Baseline Analytics (Bottleneck Kept) ---
     
-    print("Running baseline analytics...")
+    # print("Running baseline analytics...")
     
-    # BAD PRACTICE 6 (Still Naive): A wide aggregation (groupBy)
-    analytics_df = final_df.groupBy("pickup_borough").agg(
-        avg("trip_distance").alias("avg_trip_distance"),
-        avg("total_amount").alias("avg_total_amount"),
-        max("trip_duration_mins").alias("max_trip_duration"),
-        count(lit(1)).alias("total_trips")
-    )
+    # # BAD PRACTICE 6 (Still Naive): A wide aggregation (groupBy)
+    # analytics_df = final_df.groupBy("pickup_borough").agg(
+    #     avg("trip_distance").alias("avg_trip_distance"),
+    #     avg("total_amount").alias("avg_total_amount"),
+    #     max("trip_duration_mins").alias("max_trip_duration"),
+    #     count(lit(1)).alias("total_trips")
+    # )
     
     
     # --- 6. Action: Show and Write Results ---
     
     # BAD PRACTICE 7 (Still Naive): Triggering the *entire* DAG (computation) twice.
-    print("--- Analytics Results (Intermediate) ---")
-    analytics_df.show(truncate=False)
+    # print("--- Analytics Results (Intermediate) ---")
+    # analytics_df.show(truncate=False)
     
     print("Writing cleaned data to 'data/cleaned_trips_intermediate'...")
-    final_df.write \
+    final_df.coalesce(10).write \
         .mode("overwrite") \
         .parquet("data/cleaned_trips_intermediate")
 
     print("--- Intermediate Job Complete ---")
 
 if __name__ == "__main__":
+    start_time = time.time()
     spark_session = create_spark_session()
     run_intermediate_etl_and_analytics(spark_session)
     spark_session.stop()
+    end_time = time.time()
+    print(f"Total Job Time: {end_time - start_time:.2f} seconds")
