@@ -53,18 +53,18 @@ Execute the "naive" ETL script using spark-submit. This job will run several tra
 ```
 spark-submit \
   --driver-memory 12g \
-  naive_etl_and_analytics.py > naive_etl_output.txt
+  naive_etl.py > naive_etl_output.txt
 
 ```
 
-5. Run the Intermediate ETL Job
+5. Run the Optimized ETL Job
 
-Execute the "naive" ETL script using spark-submit. This job will run several transformations and establish our initial performance baseline.
+Execute the "optimized" ETL script using spark-submit.
 
 ```
 spark-submit \
   --driver-memory 12g \
-  intermediate_etl_and_analytics.py > intermediate_etl_output.txt
+  optimized_etl.py > optimized_etl_output.txt
 
 ```
 
