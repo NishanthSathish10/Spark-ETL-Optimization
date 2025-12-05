@@ -120,7 +120,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy(desc("avg_fare"))
     
-    borough_stats.show(truncate=False)
     log("\n" + format_dataframe(borough_stats))
     insight1_end = time.time()
     log(f"  Query Time: {insight1_end - insight1_start:.2f} seconds")
@@ -141,7 +140,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
             ) \
             .orderBy("pickup_hour")
     
-    congestion_by_hour.show(24, truncate=False)
     log("\n" + format_dataframe(congestion_by_hour, max_rows=24))
     insight2_end = time.time()
     log(f"  Query Time: {insight2_end - insight2_start:.2f} seconds")
@@ -165,7 +163,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy("pickup_year")
     
-    yearly_trends.show(truncate=False)
     log("\n" + format_dataframe(yearly_trends))
     insight3_end = time.time()
     log(f"  Query Time: {insight3_end - insight3_start:.2f} seconds")
@@ -193,7 +190,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy(desc("avg_cost"))
     
-    trip_categories.show(truncate=False)
     log("\n" + format_dataframe(trip_categories))
     insight4_end = time.time()
     log(f"  Query Time: {insight4_end - insight4_start:.2f} seconds")
@@ -224,7 +220,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
     
     dow_display = dow_patterns.select("day_name", "trip_count", "avg_fare", "avg_speed_mph") \
                 .orderBy("pickup_day_of_week")
-    dow_display.show(truncate=False)
     log("\n" + format_dataframe(dow_display))
     insight5_end = time.time()
     log(f"  Query Time: {insight5_end - insight5_start:.2f} seconds")
@@ -244,7 +239,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       .orderBy(desc("trip_count")) \
       .limit(10)
     
-    top_routes.show(truncate=False)
     log("\n" + format_dataframe(top_routes))
     insight6_end = time.time()
     log(f"  Query Time: {insight6_end - insight6_start:.2f} seconds")
@@ -273,7 +267,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
                                      .select("month_name", "trip_count", "avg_fare", "avg_distance", "avg_speed_mph") \
                                      .orderBy("pickup_month")
     
-    monthly_display.show(truncate=False)
     log("\n" + format_dataframe(monthly_display))
     insight7_end = time.time()
     log(f"  Query Time: {insight7_end - insight7_start:.2f} seconds")
@@ -300,7 +293,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
      .orderBy(desc("trip_count")) \
      .limit(15)
     
-    airport_trips.show(truncate=False)
     log("\n" + format_dataframe(airport_trips))
     insight8_end = time.time()
     log(f"  Query Time: {insight8_end - insight8_start:.2f} seconds")
@@ -320,7 +312,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy("passenger_count")
     
-    passenger_patterns.show(truncate=False)
     log("\n" + format_dataframe(passenger_patterns))
     insight9_end = time.time()
     log(f"  Query Time: {insight9_end - insight9_start:.2f} seconds")
@@ -343,7 +334,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy(desc("avg_fare_per_mile"))
     
-    fare_efficiency.show(truncate=False)
     log("\n" + format_dataframe(fare_efficiency))
     insight10_end = time.time()
     log(f"  Query Time: {insight10_end - insight10_start:.2f} seconds")
@@ -368,7 +358,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy("is_weekend")
     
-    weekend_comparison.show(truncate=False)
     log("\n" + format_dataframe(weekend_comparison))
     insight11_end = time.time()
     log(f"  Query Time: {insight11_end - insight11_start:.2f} seconds")
@@ -389,7 +378,6 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       .orderBy(desc("trip_count")) \
       .limit(10)
     
-    peak_hours.show(truncate=False)
     log("\n" + format_dataframe(peak_hours))
     insight12_end = time.time()
     log(f"  Query Time: {insight12_end - insight12_start:.2f} seconds")
