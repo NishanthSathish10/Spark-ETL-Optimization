@@ -156,14 +156,19 @@ def run_optimized_etl(spark):
     # Note: > 0 checks handle NULLs implicitly
     # DATA QUALITY FIX: Filter out invalid dates (only keep 2011-2024)
     # This removes trips with dates outside the valid range (2011-2024)
-    print("Applying data quality filters (including date validation 2011-2024)...")
+    # Also filter unrealistic passenger counts, trip distances, and fare amounts
+    print("Applying data quality filters (date validation 2011-2024, passenger_count <= 5, trip_distance <= 3000 miles, total_amount <= $2000)...")
     rows_before_filter = df_features.count()
     
     df_filtered = df_features.filter(
         (col("trip_distance") > 0) & 
+        (col("trip_distance") <= 3000) &  # Cap at 3000 miles (reasonable max for cross-country trips)
         (col("total_amount") > 0) & 
+        (col("total_amount") <= 2000) &  # Cap at $2000 (filters out unrealistic fare amounts)
         (col("trip_duration_mins") > 1) & 
-        (col("trip_duration_mins") < 240) & 
+        (col("trip_duration_mins") < 240) &  # Max 4 hours
+        (col("passenger_count") > 0) &
+        (col("passenger_count") <= 5) &  # Reasonable max for taxi (typically 1-4, allow up to 5)
         (col("PULocationID").isNotNull()) & 
         (col("DOLocationID").isNotNull()) &
         (col("pickup_datetime").isNotNull()) &

@@ -5,7 +5,7 @@ Results will be saved to: analytics_results.txt
 
 [Loading] Reading optimized data...
 ✓ Data schema loaded successfully
-  Load Time: 0.91 seconds
+  Load Time: 1.02 seconds
   NOTE: Using lazy evaluation - Spark will optimize reads from Parquet files
   NOTE: Row count will be computed during first aggregation query
 
@@ -21,7 +21,7 @@ Results will be saved to: analytics_results.txt
 | Bronx          | 1564352    | 22.52    | 23.55        | 19.58             | 35235956.34    | 1.52           |
 | Brooklyn       | 26328763   | 17.34    | 9.01         | 15.32             | 456519723.44   | 1.64           |
 | Manhattan      | 1282737319 | 14.31    | 5.3          | 12.63             | 18361911243.06 | 1.63           |
-  Query Time: 23.98 seconds
+  Query Time: 11.30 seconds
 
 ================================================================================
 [2] Congestion Analysis: Average Speed (MPH) by Hour of Day
@@ -53,7 +53,7 @@ Results will be saved to: analytics_results.txt
 | 21          | 26.68         | 79059122   | 12.65             |
 | 22          | 28.79         | 75561293   | 12.86             |
 | 23          | 27.07         | 64880847   | 12.91             |
-  Query Time: 118.19 seconds
+  Query Time: 34.36 seconds
   NOTE: Lower speeds during 8am-9am and 5pm-6pm indicate rush hour congestion
 
 ================================================================================
@@ -76,7 +76,7 @@ Results will be saved to: analytics_results.txt
 | 2022        | 37996407   | 21.3     | 5.96         |
 | 2023        | 36499184   | 28.51    | 4.09         |
 | 2024        | 39307767   | 28.13    | 5.0          |
-  Query Time: 351.45 seconds
+  Query Time: 100.43 seconds
   NOTE: Look for drop in 2020-2021 (COVID impact)
 
 ================================================================================
@@ -89,7 +89,7 @@ Results will be saved to: analytics_results.txt
 | Medium (5-10mi)   | 120345182  | 29.79    | 7.05         | 1.6            | 24.57             |
 | Short (2-5mi)     | 401045825  | 16.74    | 3.07         | 1.6            | 16.45             |
 | Very Short (<2mi) | 793286226  | 9.75     | 1.15         | 1.6            | 8.23              |
-  Query Time: 44.65 seconds
+  Query Time: 20.98 seconds
 
 ================================================================================
 [5] Day of Week Patterns
@@ -104,7 +104,7 @@ Results will be saved to: analytics_results.txt
 | Thursday  | 208995040  | 16.47    | 21.17         |
 | Friday    | 212450627  | 16.25    | 27.99         |
 | Saturday  | 209262518  | 15.12    | 24.86         |
-  Query Time: 157.63 seconds
+  Query Time: 71.40 seconds
 
 ================================================================================
 [6] Top Borough-to-Borough Routes
@@ -122,7 +122,7 @@ Results will be saved to: analytics_results.txt
 | Brooklyn       | Manhattan       | 8833969    | 22.3     | 12.45        |
 | Manhattan      | Bronx           | 5948072    | 33.53    | 18.24        |
 | Manhattan      | EWR             | 2154590    | 93.5     | 26.12        |
-  Query Time: 109.22 seconds
+  Query Time: 45.39 seconds
 
 ================================================================================
 [7] Monthly/Seasonal Patterns Analysis
@@ -142,7 +142,7 @@ Results will be saved to: analytics_results.txt
 | Oct        | 120778795  | 16.64    | 4.8          | 19.43         |
 | Nov        | 113099965  | 16.47    | 5.28         | 19.12         |
 | Dec        | 114391900  | 16.51    | 5.21         | 19.99         |
-  Query Time: 165.05 seconds
+  Query Time: 69.89 seconds
   NOTE: Look for seasonal patterns (summer vs winter)
 
 ================================================================================
@@ -166,7 +166,7 @@ Results will be saved to: analytics_results.txt
 | Brooklyn       | Brooklyn        | 573        | 51.08    | 10.77        | 32.28             | 815.75             |
 | Bronx          | EWR             | 511        | 111.06   | 24.85        | 44.59             | 0.0                |
 | Brooklyn       | Manhattan       | 498        | 71.23    | 6.5          | 23.37             | 660.5              |
-  Query Time: 126.09 seconds
+  Query Time: 59.18 seconds
 
 ================================================================================
 [9] Passenger Count Patterns
@@ -200,7 +200,7 @@ Results will be saved to: analytics_results.txt
 | 193             | 1          | 7.5      | 1.74         | 8.0               |
 | 249             | 1          | 9.5      | 1.69         | 9.0               |
 | 254             | 1          | 6.5      | 1.02         | 7.0               |
-  Query Time: 39.76 seconds
+  Query Time: 20.64 seconds
   NOTE: Most trips are solo (1 passenger)
 
 ================================================================================
@@ -215,7 +215,7 @@ Results will be saved to: analytics_results.txt
 | Bronx          | 1564352    | 7.89              | 22.52    | 23.55        |
 | Brooklyn       | 26328763   | 6.35              | 17.34    | 9.01         |
 | Queens         | 79510719   | 5.24              | 43.22    | 16.93        |
-  Query Time: 66.28 seconds
+  Query Time: 32.44 seconds
   NOTE: Higher fare/mile indicates premium routes or traffic
 
 ================================================================================
@@ -226,7 +226,7 @@ Results will be saved to: analytics_results.txt
 |------------|------------|----------|--------------|---------------|-------------------|
 | Weekday    | 1000583622 | 16.23    | 5.93         | 26.89         | 14.06             |
 | Weekend    | 389619442  | 15.54    | 6.4          | 26.55         | 12.83             |
-  Query Time: 82.96 seconds
+  Query Time: 28.49 seconds
 
 ================================================================================
 [12] Peak Hours Analysis (Top 10 Busiest Hours)
@@ -244,9 +244,9 @@ Results will be saved to: analytics_results.txt
 | 15          | 71065298   | 16.82    | 25.19         | 1195173075.77 |
 | 13          | 70467112   | 16.16    | 20.77         | 1138459273.04 |
 | 12          | 70404375   | 15.61    | 20.42         | 1098721014.61 |
-  Query Time: 50.86 seconds
+  Query Time: 19.15 seconds
   NOTE: Identifies busiest hours for demand planning
 
 ================================================================================
-✓ Analytics Complete in 1337.04 seconds
+✓ Analytics Complete in 514.68 seconds
 ================================================================================
