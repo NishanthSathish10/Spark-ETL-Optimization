@@ -5,7 +5,7 @@ Results will be saved to: analytics_results.txt
 
 [Loading] Reading optimized data...
 ✓ Data schema loaded successfully
-  Load Time: 1.18 seconds
+  Load Time: 1.08 seconds
   NOTE: Using lazy evaluation - Spark will optimize reads from Parquet files
   NOTE: Row count will be computed during first aggregation query
 
@@ -16,12 +16,12 @@ Results will be saved to: analytics_results.txt
 | pickup_borough | trip_count       | avg_fare | avg_distance | avg_duration_mins | total_revenue     | avg_passengers |
 |----------------|------------------|----------|--------------|-------------------|-------------------|----------------|
 | EWR            | 10,256.00        | 68.01    | 6.87         | 15.69             | 697,488.72        | 1.50           |
-| Queens         | 76,960,754.00    | 43.23    | 10.95        | 30.71             | 3,326,790,181.66  | 1.54           |
+| Queens         | 76,960,754.00    | 43.23    | 10.95        | 30.71             | 3,326,790,181.65  | 1.54           |
 | Staten Island  | 50,098.00        | 32.82    | 8.58         | 23.65             | 1,644,315.10      | 1.64           |
 | Bronx          | 1,530,885.00     | 22.61    | 5.22         | 19.65             | 34,617,611.27     | 1.45           |
 | Brooklyn       | 25,525,159.00    | 17.36    | 3.83         | 15.34             | 443,045,157.34    | 1.52           |
-| Manhattan      | 1,239,772,523.00 | 14.29    | 2.46         | 12.63             | 17,719,755,259.45 | 1.51           |
-  Query Time: 13.09 seconds
+| Manhattan      | 1,239,772,523.00 | 14.29    | 2.46         | 12.63             | 17,719,755,259.63 | 1.51           |
+  Query Time: 13.51 seconds
 
 ================================================================================
 [2] Congestion Analysis: Average Speed (MPH) by Hour of Day
@@ -53,7 +53,7 @@ Results will be saved to: analytics_results.txt
 | 21.00       | 13.29         | 76,599,016.00 | 12.66             |
 | 22.00       | 13.69         | 73,235,195.00 | 12.87             |
 | 23.00       | 14.36         | 62,891,566.00 | 12.92             |
-  Query Time: 28.80 seconds
+  Query Time: 35.39 seconds
   NOTE: Lower speeds during 8am-9am and 5pm-6pm indicate rush hour congestion
 
 ================================================================================
@@ -76,7 +76,7 @@ Results will be saved to: analytics_results.txt
 | 2,022.00    | 36,813,855.00  | 21.30    | 3.49         |
 | 2,023.00    | 35,634,974.00  | 28.55    | 3.48         |
 | 2,024.00    | 38,731,758.00  | 28.15    | 3.37         |
-  Query Time: 58.48 seconds
+  Query Time: 95.97 seconds
   NOTE: Look for drop in 2020-2021 (COVID impact)
 
 ================================================================================
@@ -89,7 +89,7 @@ Results will be saved to: analytics_results.txt
 | Medium (5-10mi)   | 116,434,073.00 | 29.75    | 7.05         | 1.50           | 24.58             |
 | Short (2-5mi)     | 387,621,019.00 | 16.70    | 3.07         | 1.50           | 16.45             |
 | Very Short (<2mi) | 766,695,481.00 | 9.74     | 1.15         | 1.50           | 8.24              |
-  Query Time: 11.15 seconds
+  Query Time: 17.05 seconds
 
 ================================================================================
 [5] Day of Week Patterns
@@ -104,7 +104,7 @@ Results will be saved to: analytics_results.txt
 | Thursday  | 202,032,556.00 | 16.46    | 11.41         |
 | Friday    | 205,382,176.00 | 16.20    | 11.58         |
 | Saturday  | 202,247,077.00 | 15.12    | 12.61         |
-  Query Time: 43.60 seconds
+  Query Time: 49.78 seconds
 
 ================================================================================
 [6] Top Borough-to-Borough Routes
@@ -122,7 +122,7 @@ Results will be saved to: analytics_results.txt
 | Brooklyn       | Manhattan       | 8,554,940.00     | 22.33    | 5.20         |
 | Manhattan      | Bronx           | 5,755,097.00     | 31.86    | 9.00         |
 | Manhattan      | EWR             | 2,086,859.00     | 93.53    | 17.39        |
-  Query Time: 11.56 seconds
+  Query Time: 53.52 seconds
 
 ================================================================================
 [7] Monthly/Seasonal Patterns Analysis
@@ -142,7 +142,7 @@ Results will be saved to: analytics_results.txt
 | Oct        | 116,692,258.00 | 16.62    | 3.01         | 11.85         |
 | Nov        | 109,246,272.00 | 16.47    | 2.97         | 11.85         |
 | Dec        | 110,460,051.00 | 16.51    | 2.96         | 11.85         |
-  Query Time: 54.28 seconds
+  Query Time: 69.20 seconds
   NOTE: Look for seasonal patterns (summer vs winter)
 
 ================================================================================
@@ -166,7 +166,7 @@ Results will be saved to: analytics_results.txt
 | Brooklyn       | Brooklyn        | 568.00       | 51.36    | 10.81        | 32.38             | 808.50             |
 | Bronx          | EWR             | 497.00       | 110.86   | 24.83        | 44.51             | 0.00               |
 | Brooklyn       | Manhattan       | 494.00       | 71.18    | 6.49         | 23.31             | 655.00             |
-  Query Time: 10.53 seconds
+  Query Time: 60.27 seconds
 
 ================================================================================
 [9] Passenger Count Patterns
@@ -179,7 +179,7 @@ Results will be saved to: analytics_results.txt
 | 3.00            | 58,302,211.00  | 16.13    | 3.06         | 14.18             |
 | 4.00            | 28,216,467.00  | 16.42    | 3.14         | 14.54             |
 | 5.00            | 73,082,445.00  | 15.14    | 3.02         | 13.54             |
-  Query Time: 12.33 seconds
+  Query Time: 20.99 seconds
   NOTE: Most trips are solo (1 passenger)
 
 ================================================================================
@@ -194,7 +194,7 @@ Results will be saved to: analytics_results.txt
 | Bronx          | 1,530,885.00     | 7.91              | 22.61    | 5.22         |
 | Brooklyn       | 25,525,159.00    | 6.36              | 17.36    | 3.83         |
 | Queens         | 76,960,754.00    | 5.25              | 43.23    | 10.95        |
-  Query Time: 22.53 seconds
+  Query Time: 32.62 seconds
   NOTE: Higher fare/mile indicates premium routes or traffic
 
 ================================================================================
@@ -205,25 +205,25 @@ Results will be saved to: analytics_results.txt
 |------------|----------------|----------|--------------|---------------|-------------------|
 | Weekday    | 967,204,039.00 | 16.21    | 2.94         | 11.76         | 14.07             |
 | Weekend    | 376,645,636.00 | 15.52    | 3.05         | 13.29         | 12.84             |
-  Query Time: 27.29 seconds
+  Query Time: 70.42 seconds
 
 ================================================================================
 [12] Peak Hours Analysis (Top 10 Busiest Hours)
 ================================================================================
 
-| pickup_hour | trip_count    | avg_fare | avg_speed_mph | total_revenue    |
-|-------------|---------------|----------|---------------|------------------|
-| 19.00       | 83,839,512.00 | 15.56    | 11.46         | 1,304,279,869.58 |
-| 18.00       | 83,665,406.00 | 16.11    | 10.61         | 1,347,556,235.72 |
-| 20.00       | 77,859,113.00 | 15.53    | 12.62         | 1,208,851,149.62 |
-| 21.00       | 76,599,016.00 | 15.84    | 13.29         | 1,213,612,748.95 |
-| 22.00       | 73,235,195.00 | 16.14    | 13.69         | 1,181,914,368.24 |
-| 17.00       | 71,761,002.00 | 17.12    | 10.50         | 1,228,417,950.69 |
-| 14.00       | 70,784,971.00 | 16.66    | 10.41         | 1,179,318,132.48 |
-| 15.00       | 68,593,487.00 | 16.83    | 10.29         | 1,154,487,260.40 |
-| 13.00       | 67,976,419.00 | 16.13    | 10.61         | 1,096,260,788.51 |
-| 12.00       | 67,894,103.00 | 15.60    | 10.47         | 1,059,296,312.02 |
-  Query Time: 49.96 seconds
+| pickup_hour | trip_count    | avg_fare | avg_speed_mph | total_revenue    | hour_label |
+|-------------|---------------|----------|---------------|------------------|------------|
+| 19.00       | 83,839,512.00 | 15.56    | 11.46         | 1,304,279,869.58 | 7 PM       |
+| 18.00       | 83,665,406.00 | 16.11    | 10.61         | 1,347,556,235.72 | 6 PM       |
+| 20.00       | 77,859,113.00 | 15.53    | 12.62         | 1,208,851,149.62 | 8 PM       |
+| 21.00       | 76,599,016.00 | 15.84    | 13.29         | 1,213,612,748.95 | 9 PM       |
+| 22.00       | 73,235,195.00 | 16.14    | 13.69         | 1,181,914,368.24 | 10 PM      |
+| 17.00       | 71,761,002.00 | 17.12    | 10.50         | 1,228,417,950.69 | 5 PM       |
+| 14.00       | 70,784,971.00 | 16.66    | 10.41         | 1,179,318,132.48 | 2 PM       |
+| 15.00       | 68,593,487.00 | 16.83    | 10.29         | 1,154,487,260.40 | 3 PM       |
+| 13.00       | 67,976,419.00 | 16.13    | 10.61         | 1,096,260,788.51 | 1 PM       |
+| 12.00       | 67,894,103.00 | 15.60    | 10.47         | 1,059,296,312.02 | 12 PM      |
+  Query Time: 67.78 seconds
   NOTE: Identifies busiest hours for demand planning
 
 ================================================================================
@@ -232,21 +232,21 @@ TAIL LATENCY ANALYSIS
 
 Query Execution Time Statistics:
   Total Queries: 12
-  Min Query Time: 10.53 seconds
-  Max Query Time: 58.48 seconds
-  Average Query Time: 28.63 seconds
-  Median (p50): 27.29 seconds
-  p95 Latency: 58.48 seconds
-  p99 Latency: 58.48 seconds
+  Min Query Time: 13.51 seconds
+  Max Query Time: 95.97 seconds
+  Average Query Time: 48.88 seconds
+  Median (p50): 53.52 seconds
+  p95 Latency: 95.97 seconds
+  p99 Latency: 95.97 seconds
 
 Slowest Queries (Tail Latency):
-  1. Insight 3: Yearly Trends: 58.48 seconds
-  2. Insight 7: Monthly Patterns: 54.28 seconds
-  3. Insight 12: Peak Hours: 49.96 seconds
+  1. Insight 3: Yearly Trends: 95.97 seconds
+  2. Insight 11: Weekend vs Weekday: 70.42 seconds
+  3. Insight 7: Monthly Patterns: 69.20 seconds
 
-Tail Latency Ratio (p99/p50): 2.14x
-  ⚠️  CAUTION: Moderate tail latency - some optimization may be needed
+Tail Latency Ratio (p99/p50): 1.79x
+  ✓ Good: Low tail latency - queries are consistent
 
 ================================================================================
-✓ Analytics Complete in 344.78 seconds
+✓ Analytics Complete in 587.59 seconds
 ================================================================================
