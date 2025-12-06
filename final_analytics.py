@@ -27,6 +27,8 @@ def create_analytics_session():
         .config("spark.sql.shuffle.partitions", "200") \
         .config("spark.sql.adaptive.advisoryPartitionSizeInBytes", "128MB") \
         .config("spark.sql.files.maxPartitionBytes", "256MB") \
+        .config("spark.sql.adaptive.skewJoin.enabled", "true") \
+        .config("spark.sql.adaptive.localShuffleReader.enabled", "true") \
         .getOrCreate()
 
 def format_dataframe(df, max_rows=None, plotter=None):
@@ -182,15 +184,18 @@ def run_analytics(spark, output_file="analytics_results.txt"):
     
     # OPTIMIZATION: Use pre-computed pickup_year column
     # DATA QUALITY FIX: Filter out invalid years (only keep 2011-2024)
+    # TAIL LATENCY OPTIMIZATION: Use partition pruning if data is partitioned by year
+    # Also use column pruning - only select needed columns
     yearly_trends = df_enriched.filter(
         (col("pickup_year") >= 2011) & (col("pickup_year") <= 2024)
-    ).groupBy("pickup_year") \
-      .agg(
-          count("*").alias("trip_count"),
-          round(avg("total_amount"), 2).alias("avg_fare"),
-          round(avg("trip_distance"), 2).alias("avg_distance")
-      ) \
-      .orderBy("pickup_year")
+    ).select("pickup_year", "total_amount", "trip_distance") \
+     .groupBy("pickup_year") \
+     .agg(
+         count("*").alias("trip_count"),
+         round(avg("total_amount"), 2).alias("avg_fare"),
+         round(avg("trip_distance"), 2).alias("avg_distance")
+     ) \
+     .orderBy("pickup_year")
     
     log("\n" + format_dataframe(yearly_trends, plotter='yearly_trends'))
     insight3_end = time.time()
@@ -278,7 +283,10 @@ def run_analytics(spark, output_file="analytics_results.txt"):
     log("=" * 80)
     insight7_start = time.time()
     
-    monthly_patterns = df_enriched.groupBy("pickup_month") \
+    # TAIL LATENCY OPTIMIZATION: Column pruning - only select needed columns
+    # Partition pruning will help if data is partitioned by month
+    monthly_patterns = df_enriched.select("pickup_month", "total_amount", "trip_distance", "speed_mph") \
+      .groupBy("pickup_month") \
       .agg(
           count("*").alias("trip_count"),
           round(avg("total_amount"), 2).alias("avg_fare"),
@@ -397,7 +405,10 @@ def run_analytics(spark, output_file="analytics_results.txt"):
     log("=" * 80)
     insight12_start = time.time()
     
-    peak_hours = df_enriched.groupBy("pickup_hour") \
+    # TAIL LATENCY OPTIMIZATION: Column pruning - only select needed columns
+    # This reduces data scanned during aggregation
+    peak_hours = df_enriched.select("pickup_hour", "total_amount", "speed_mph") \
+      .groupBy("pickup_hour") \
       .agg(
           count("*").alias("trip_count"),
           round(avg("total_amount"), 2).alias("avg_fare"),

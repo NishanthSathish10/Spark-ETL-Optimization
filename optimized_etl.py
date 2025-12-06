@@ -1,7 +1,7 @@
 import time
 import pyspark
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lit, round, avg, count, max, to_timestamp, coalesce, broadcast, year as spark_year
+from pyspark.sql.functions import col, lit, round, avg, count, max, to_timestamp, coalesce, broadcast, year as spark_year, month as spark_month
 from pyspark.sql.types import StructType, StructField, StringType, LongType, DoubleType, IntegerType, TimestampNTZType, TimestampType
 
 def create_optimized_spark_session():
@@ -238,10 +238,17 @@ def run_optimized_etl(spark):
     # --- WRITE ---
     writing_start = time.time()
     print("Writing final optimized dataset...")
+    # OPTIMIZATION: Partition by year and month for faster time-based queries
+    # This enables partition pruning for yearly/monthly aggregations (reduces tail latency)
+    df_with_partitions = df_joined.withColumn("year", spark_year(col("pickup_datetime"))) \
+                                  .withColumn("month", spark_month(col("pickup_datetime")))
+    
     # OPTIMIZATION: Use repartition instead of coalesce for better distribution
     # Also increase partition count to reduce memory pressure per partition
-    df_joined.repartition(50).write \
+    # Partition by year and month for partition pruning benefits
+    df_with_partitions.repartition(50, "year", "month").write \
         .mode("overwrite") \
+        .partitionBy("year", "month") \
         .option("compression", "snappy") \
         .parquet("data/cleaned_trips_optimized")
     writing_end = time.time()
