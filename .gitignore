@@ -215,3 +215,4 @@ naive_etl_vectorization_disabled.txt
 optimized_etl_vanilla.txt
 baseline_analytics_old.txt
 baseline_analytics.py
+new_opt_run.txt
