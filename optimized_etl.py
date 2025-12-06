@@ -158,7 +158,8 @@ def run_optimized_etl(spark):
     # This removes trips with dates outside the valid range (2011-2024)
     # Also filter unrealistic passenger counts, trip distances, and fare amounts
     print("Applying data quality filters (date validation 2011-2024, passenger_count <= 5, trip_distance <= 3000 miles, total_amount <= $2000)...")
-    rows_before_filter = df_features.count()
+    # NOTE: Removed .count() calls to avoid materializing entire dataset (saves ~15 minutes)
+    # Filter statistics can be obtained from Spark UI or by running a separate analysis query if needed
     
     df_filtered = df_features.filter(
         (col("trip_distance") > 0) & 
@@ -178,12 +179,6 @@ def run_optimized_etl(spark):
         (spark_year(col("dropoff_datetime")) >= 2011) &
         (spark_year(col("dropoff_datetime")) <= 2024)
     )
-    
-    rows_after_filter = df_filtered.count()
-    rows_filtered = rows_before_filter - rows_after_filter
-    print(f"  Rows before filter: {rows_before_filter:,}")
-    print(f"  Rows after filter: {rows_after_filter:,}")
-    print(f"  Rows filtered out: {rows_filtered:,} ({100*rows_filtered/rows_before_filter:.2f}%)")
 
     # Remove "Unknown" and "N/A" boroughs which are valid join keys but invalid for analysis
     # print("Filtering 'Unknown' and 'N/A' boroughs...")

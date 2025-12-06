@@ -2,6 +2,16 @@ import time
 import sys
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, avg, count, hour, dayofweek, month, round, year, when, max, min, sum, desc
+import pandas as pd
+import builtins
+
+# Optional plotting support - only import if matplotlib is available
+try:
+    from plot import plot_map
+    PLOTTING_AVAILABLE = True
+except ImportError:
+    PLOTTING_AVAILABLE = False
+    plot_map = {}
 
 def create_analytics_session():
     """Create optimized Spark session for analytics with proper memory configuration."""
@@ -19,36 +29,55 @@ def create_analytics_session():
         .config("spark.sql.files.maxPartitionBytes", "256MB") \
         .getOrCreate()
 
-def format_dataframe(df, max_rows=None):
-    """Format DataFrame for output."""
-    rows = df.collect()
-    if max_rows:
-        rows = rows[:max_rows]
+def format_dataframe(df, max_rows=None, plotter=None):
+    """
+    Converts a PySpark DataFrame to Pandas, formats large numbers to prevent 
+    scientific notation, and generates a column-aligned string output.
+    """
+    pandas_df = df.toPandas()
+    if max_rows is not None:
+        pandas_df = pandas_df.head(max_rows)
     
-    # Get column names
-    cols = df.columns
-    
-    # Calculate column widths using Python's built-in max (avoid conflict with Spark's max)
-    import builtins
+    if plotter and PLOTTING_AVAILABLE and plot_map.get(plotter, None):
+        plot_map[plotter](pandas_df)
+    elif plotter and not PLOTTING_AVAILABLE:
+        # Silently skip plotting if matplotlib is not available
+        pass
+
+    formatted_data = {}
     col_widths = []
-    for i, col in enumerate(cols):
-        col_name_len = len(str(col))
-        if rows:
-            max_val_len = builtins.max((len(str(row[i])) for row in rows), default=0)
-        else:
-            max_val_len = 0
-        col_widths.append(builtins.max(col_name_len, max_val_len))
     
-    # Build output
+    for col in pandas_df.columns:
+        if pd.api.types.is_numeric_dtype(pandas_df[col]):
+            # Apply formatting to prevent scientific notation (e.g., 1,234,567.89)
+            formatted_series = pandas_df[col].apply(lambda x: f'{x:,.2f}')
+        else:
+            formatted_series = pandas_df[col].astype(str)
+            
+        formatted_data[col] = formatted_series
+        
+        # Width Calculation: Find the max of header length and max data length.
+        col_name_len = len(str(col))
+        max_val_len = formatted_series.str.len().max()
+        
+        col_widths.append(builtins.max(col_name_len, max_val_len))
+
+    df_formatted = pd.DataFrame(formatted_data)
+    cols = df_formatted.columns.tolist()
+
+    # Build the output string
     output = []
+    
     # Header
     header = "|" + "|".join(f" {col:<{col_widths[i]}} " for i, col in enumerate(cols)) + "|"
     output.append(header)
     output.append("|" + "|".join("-" * (w + 2) for w in col_widths) + "|")
     
     # Rows
-    for row in rows:
-        row_str = "|" + "|".join(f" {str(row[i]):<{col_widths[i]}} " for i in range(len(cols))) + "|"
+    for _, row in df_formatted.iterrows():
+        row_str = "|" + "|".join(
+            f" {row[col]:<{col_widths[i]}} " for i, col in enumerate(cols)
+        ) + "|"
         output.append(row_str)
     
     return "\n".join(output)
@@ -120,7 +149,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy(desc("avg_fare"))
     
-    log("\n" + format_dataframe(borough_stats))
+    log("\n" + format_dataframe(borough_stats, plotter='borough_stats'))
     insight1_end = time.time()
     log(f"  Query Time: {insight1_end - insight1_start:.2f} seconds")
 
@@ -140,7 +169,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
             ) \
             .orderBy("pickup_hour")
     
-    log("\n" + format_dataframe(congestion_by_hour, max_rows=24))
+    log("\n" + format_dataframe(congestion_by_hour, max_rows=24, plotter='congestion_by_hour'))
     insight2_end = time.time()
     log(f"  Query Time: {insight2_end - insight2_start:.2f} seconds")
     log("  NOTE: Lower speeds during 8am-9am and 5pm-6pm indicate rush hour congestion")
@@ -163,7 +192,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy("pickup_year")
     
-    log("\n" + format_dataframe(yearly_trends))
+    log("\n" + format_dataframe(yearly_trends, plotter='yearly_trends'))
     insight3_end = time.time()
     log(f"  Query Time: {insight3_end - insight3_start:.2f} seconds")
     log("  NOTE: Look for drop in 2020-2021 (COVID impact)")
@@ -220,7 +249,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
     
     dow_display = dow_patterns.select("day_name", "trip_count", "avg_fare", "avg_speed_mph") \
                 .orderBy("pickup_day_of_week")
-    log("\n" + format_dataframe(dow_display))
+    log("\n" + format_dataframe(dow_display, plotter='dow_patterns'))
     insight5_end = time.time()
     log(f"  Query Time: {insight5_end - insight5_start:.2f} seconds")
     
@@ -239,7 +268,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       .orderBy(desc("trip_count")) \
       .limit(10)
     
-    log("\n" + format_dataframe(top_routes))
+    log("\n" + format_dataframe(top_routes, plotter='top_routes'))
     insight6_end = time.time()
     log(f"  Query Time: {insight6_end - insight6_start:.2f} seconds")
     
@@ -267,7 +296,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
                                      .select("month_name", "trip_count", "avg_fare", "avg_distance", "avg_speed_mph") \
                                      .orderBy("pickup_month")
     
-    log("\n" + format_dataframe(monthly_display))
+    log("\n" + format_dataframe(monthly_display, plotter='monthly_patterns'))
     insight7_end = time.time()
     log(f"  Query Time: {insight7_end - insight7_start:.2f} seconds")
     log("  NOTE: Look for seasonal patterns (summer vs winter)")
@@ -293,7 +322,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
      .orderBy(desc("trip_count")) \
      .limit(15)
     
-    log("\n" + format_dataframe(airport_trips))
+    log("\n" + format_dataframe(airport_trips, plotter='airport_trips'))
     insight8_end = time.time()
     log(f"  Query Time: {insight8_end - insight8_start:.2f} seconds")
     
@@ -312,7 +341,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy("passenger_count")
     
-    log("\n" + format_dataframe(passenger_patterns))
+    log("\n" + format_dataframe(passenger_patterns, plotter='passenger_patterns'))
     insight9_end = time.time()
     log(f"  Query Time: {insight9_end - insight9_start:.2f} seconds")
     log("  NOTE: Most trips are solo (1 passenger)")
@@ -334,7 +363,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy(desc("avg_fare_per_mile"))
     
-    log("\n" + format_dataframe(fare_efficiency))
+    log("\n" + format_dataframe(fare_efficiency, plotter='fare_efficiency'))
     insight10_end = time.time()
     log(f"  Query Time: {insight10_end - insight10_start:.2f} seconds")
     log("  NOTE: Higher fare/mile indicates premium routes or traffic")
@@ -358,7 +387,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       ) \
       .orderBy("is_weekend")
     
-    log("\n" + format_dataframe(weekend_comparison))
+    log("\n" + format_dataframe(weekend_comparison, plotter='weekend_comparison'))
     insight11_end = time.time()
     log(f"  Query Time: {insight11_end - insight11_start:.2f} seconds")
     
@@ -378,15 +407,15 @@ def run_analytics(spark, output_file="analytics_results.txt"):
       .orderBy(desc("trip_count")) \
       .limit(10)
     
-    log("\n" + format_dataframe(peak_hours))
+    log("\n" + format_dataframe(peak_hours, plotter='peak_hours'))
     insight12_end = time.time()
     log(f"  Query Time: {insight12_end - insight12_start:.2f} seconds")
     log("  NOTE: Identifies busiest hours for demand planning")
 
     end_time = time.time()
     total_time = end_time - start_time
-    
-    # --- TAIL LATENCY ANALYSIS ---
+
+        # --- TAIL LATENCY ANALYSIS ---
     log("\n" + "=" * 80)
     log("TAIL LATENCY ANALYSIS")
     log("=" * 80)
@@ -409,6 +438,7 @@ def run_analytics(spark, output_file="analytics_results.txt"):
     
     # Calculate percentiles
     import statistics
+    import builtins
     times_only = [t[1] for t in query_times]
     times_sorted = sorted(times_only)
     n = len(times_sorted)
@@ -418,8 +448,8 @@ def run_analytics(spark, output_file="analytics_results.txt"):
     p99 = times_sorted[int(n * 0.99)] if n > 0 else 0
     
     avg_time = statistics.mean(times_only) if times_only else 0
-    min_time = min(times_only) if times_only else 0
-    max_time = max(times_only) if times_only else 0
+    min_time = builtins.min(times_only) if times_only else 0
+    max_time = builtins.max(times_only) if times_only else 0
     
     log(f"\nQuery Execution Time Statistics:")
     log(f"  Total Queries: {len(query_times)}")

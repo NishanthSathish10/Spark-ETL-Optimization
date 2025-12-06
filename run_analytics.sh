@@ -20,5 +20,5 @@ if [ -z "$VIRTUAL_ENV" ]; then
 fi
 
 # Run the analytics script
-python final_analytics_deva.py
+python final_analytics.py
 
